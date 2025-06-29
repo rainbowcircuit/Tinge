@@ -15,7 +15,6 @@ public:
         envelopeFall = (fallInMilliseconds/1000.0f) * sampleRate;
     }
 
-    
     void triggerEnvelope(bool gateInput)
     {
         gate = gateInput ? 1.0f : 0.0f;

@@ -19,7 +19,7 @@
 class TingeAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::Timer
 {
 public:
-    TingeAudioProcessorEditor (TingeAudioProcessor&, std::atomic<float>& phase1, std::atomic<float>& phase2, std::atomic<float>& phase3);
+    TingeAudioProcessorEditor (TingeAudioProcessor&, std::atomic<std::array<float, 3>>& phases, std::atomic<std::array<float, 16>>& noteValues);
     ~TingeAudioProcessorEditor() override;
 
     //==============================================================================
@@ -31,12 +31,11 @@ public:
 private:
     // This reference is provided as a quick way for your editor to
     // access the processor object that created it.
-    std::atomic<float>& phaseAtomic1;
-    std::atomic<float>& phaseAtomic2;
-    std::atomic<float>& phaseAtomic3;
+    std::atomic<std::array<float, 3>>& phasesAtomic;
+    std::array<float, 3> phases;
 
-    float phase0 = 0.0f, phase1 = 0.0f, phase2 = 0.0f;
-    
+    std::atomic<std::array<float, 16>>& noteValuesAtomic;
+
     juce::Slider rate1Slider, rate2Slider, rate3Slider, division1Slider, division2Slider, division3Slider;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
     rate1Attachment, rate2Attachment, rate3Attachment, division1Attachment, division2Attachment, division3Attachment;

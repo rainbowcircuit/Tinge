@@ -114,15 +114,11 @@ bool TingeAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) co
     juce::ignoreUnused (layouts);
     return true;
   #else
-    // This is the place where you check if the layout is supported.
-    // In this template code we only support mono or stereo.
-    // Some plugin hosts, such as certain GarageBand versions, will only
-    // load plugins that support stereo bus layouts.
+
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
      && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
-    // This checks if the input layout matches the output layout
    #if ! JucePlugin_IsSynth
     if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
         return false;
@@ -139,15 +135,20 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-  //  midiProcessor.holdPitches(midiMessages);
-    
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
     
     
     midiProcessor.holdPitches(midiMessages);
-    
+
     for(int sample = 0; sample < buffer.getNumSamples(); ++sample){
+        heldPitches = midiProcessor.getheldPitches();
+        int numHeldPitches = midiProcessor.getNumHeldNotes();
+        
+        
+        float globalNudgeForward = apvts.getRawParameterValue("globalNudgeForward")->load();
+        float globalNudgeBackward = apvts.getRawParameterValue("globalNudgeBackward")->load();
+        float globalBrake = apvts.getRawParameterValue("globalBrake")->load();
 
         for(int index = 0; index < 3; index++)
         {
@@ -163,7 +164,7 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 
             float state = apvts.getRawParameterValue(stateID)->load();
             float rateFree = apvts.getRawParameterValue(rateFreeID)->load();
-            //float rateSync = apvts.getRawParameterValue(rateSyncID)->load();
+            float rateSync = apvts.getRawParameterValue(rateSyncID)->load();
             float division = apvts.getRawParameterValue(divisionID)->load();
             float opacity = apvts.getRawParameterValue(opacityID)->load();
 
@@ -174,26 +175,24 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
             rotation[index].setRate(index, rateFree, 0);
             rotation[index].nudge(nudgeStrength, nudgeForward, nudgeBackward);
             rotation[index].accumulate();
-            
+            phases[index] = rotation[index].getPhase();
+
             midiProcessor.setSpinnerValues(index, state, rotation[index].getPhase(), division, opacity);
+
         }
         
         
+        // midi output processing
+        midiProcessor.setNumThresholds(heldPitches);
+        midiProcessor.processThreshold();
+        midiProcessor.processAngles();
+        midiProcessor.processInteraction();
+        
+        midiProcessor.notePlayback(midiMessages, sample);
         
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        phaseAtomic1.store(rotation[0].getPhase());
-        phaseAtomic2.store(rotation[1].getPhase());
-        phaseAtomic3.store(rotation[2].getPhase());
+        phasesAtomic.store(phases);
+        heldPitchesAtomic.store(heldPitches);
     }
 }
 
@@ -205,7 +204,7 @@ bool TingeAudioProcessor::hasEditor() const
 
 juce::AudioProcessorEditor* TingeAudioProcessor::createEditor()
 {
-    return new TingeAudioProcessorEditor (*this, phaseAtomic1, phaseAtomic2, phaseAtomic3);
+    return new TingeAudioProcessorEditor (*this, phasesAtomic, heldPitchesAtomic);
 }
 
 //==============================================================================
@@ -234,7 +233,20 @@ juce::AudioProcessorValueTreeState::ParameterLayout
 TingeAudioProcessor::createParameterLayout()
 {
         juce::AudioProcessorValueTreeState::ParameterLayout layout;
-        
+
+        layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalNudgeForward", 1},
+                                                             "Global Nudge Forward",
+                                                             0, 1, 0));
+    
+        layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalNudgeBackward", 1},
+                                                         "Global Nudge Backward",
+                                                         0, 1, 0));
+    
+        layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalBrake", 1},
+                                                     "Global Brake",
+                                                     0, 1, 0));
+
+
         for(int rotation = 0; rotation < 3; rotation++)
         {
             juce::String stateID = "state" + juce::String(rotation);
@@ -258,7 +270,6 @@ TingeAudioProcessor::createParameterLayout()
                                                                    rateFreeName,
                                                                    juce::NormalisableRange<float> { 0.0, 1.0f, 0.01 }, 0.0f));
 
-            
             juce::String rateSyncID = "rateSync" + juce::String(rotation);
             juce::String rateSyncName = "Rate Sync " + juce::String(rotation);
 

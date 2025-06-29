@@ -59,10 +59,12 @@ public:
         
     juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 private:
-    std::atomic<float> phaseAtomic1 { 0.0f };
-    std::atomic<float> phaseAtomic2 { 0.0f };
-    std::atomic<float> phaseAtomic3 { 0.0f };
+    
+    std::array<float, 3> phases;
+    std::atomic<std::array<float, 3>> phasesAtomic;
 
+    std::array<float, 16> heldPitches;
+    std::atomic<std::array<float, 16>> heldPitchesAtomic;
     
     std::array<Spinner, 3> rotation;
     MIDIProcessor midiProcessor;

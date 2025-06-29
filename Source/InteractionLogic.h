@@ -1,23 +1,3 @@
-/*
-  ==============================================================================
-
-    InteractionLogic.h
-    Created: 7 Jun 2025 3:41:22pm
-    Author:  Takuma Matsui
-
-  ==============================================================================
-*/
-
-#pragma once
-/*
-  ==============================================================================
-
-    Graphics2.h
-    Created: 7 Jun 2025 3:18:34pm
-    Author:  Takuma Matsui
-
-  ==============================================================================
-*/
 
 #pragma once
 #include <JuceHeader.h>
@@ -25,15 +5,6 @@
 class Interaction // this class is meant for both DSP and Graphics maybe
 {
 public:
-    void setThresholdAngles()
-    {
-        thresholdAngles[0] = 0.02f;
-        thresholdAngles[1] = 0.22f;
-        thresholdAngles[2] = 0.35f;
-        thresholdAngles[3] = 0.62f;
-        thresholdAngles[4] = 0.68f;
-        thresholdAngles[5] = 0.79f;
-    }
 
     std::array<float, 16> getRotationAngles(float phase, int division)
     {
@@ -79,101 +50,83 @@ public:
             return value > start || value <= end;
         }
     }
-
-    // eventually three of these per rotation
-    std::array<float, 32> angles;
-    std::array<float, 16> thresholdAngles;
-    std::array<float, 16> thresholds;
-
     
- //   float phase = 0.12f;
- //   int division = 1;
-
-    struct RotationValues
+    
+    void processThreshold()
     {
-        float phase;
-        int division;
-        std::array<float, 16> angles; // max 8 divisions
-    };
-    std::array<RotationValues, 3> rotationValues;
-    
-private:
-    
-};
-
-/*
-class InteractionGraphics : public juce::Component, Interaction
-{
-public:
-    InteractionGraphics()
-    {
-        setThresholdAngles();
-    }
-    
-    void paint(juce::Graphics& g) override
-    {
-        auto bounds = getLocalBounds().toFloat();
-        float wheelWidth = bounds.getWidth() * 0.55f;
-        float x = bounds.getX();
-        float y = bounds.getY();
+        if (numThresholds == 0)
+            return;
         
-        // sum
-        drawThreshold(g, x + 100, y + 20, wheelWidth, wheelWidth);
-        juce::Colour color1 = {200, 50, 50};
-        juce::Colour color2 = {50, 200, 50};
-        juce::Colour color3 = {50, 50, 200};
+        // find the default angles of thresholds
+        for (int i = 0; i < 16; i++){
+            float thresholdIncr = 1.0f/numThresholds;
+            thresholdAngles[i] = thresholdIncr * i;
+        }
         
-       // drawWheel(g, 2, x + 100, y + 40, wheelWidth, wheelWidth, 0.8, color1);
-    }
-    
-    void drawWheel(juce::Graphics& g, int index, int x, int y, int width, int height, float opacity, juce::Colour color)
-    {
-        float twopi = juce::MathConstants<float>::twoPi;
-        float radius = width/2;
-        
-        int division = 3;
-        for(int i = 0; i < division * 2; i+= 2)
+        // find the interaction of thresholds
+        for (int index = 0; index < 3; index++)
         {
+            rotationValue[index].threshold = getInteraction(rotationValue[index].angles,
+                                                            thresholdAngles,
+                                                            rotationValue[index].division);
+        }
+    }
 
-            float start = angles[i] * twopi;
-            float end = angles[i + 1] * twopi;
-    
-            juce::Path linePath;
-            linePath.startNewSubPath(x + width/2, y + height/2);
-            linePath.addCentredArc(x + width/2, y + height/2, radius, radius, 0.0f, start, end);
-            linePath.lineTo(x + width/2, y + height/2);
-
-            if (i % 2 == 0){
-                g.setColour(color);
-                g.fillPath(linePath);
-            }
+    void processAngles()
+    {
+        for (int index = 0; index < 3; index++)
+        {
+            rotationValue[index].angles = getRotationAngles(rotationValue[index].phase, rotationValue[index].division);
         }
     }
     
-    void drawThreshold(juce::Graphics& g, int x, int y, int width, int height)
+
+    void setNumThresholds(std::array<float, 16> heldNotes)
     {
-
-
+        int thresCounter = 0;
+        for (int i = 0; i < 16; i++){
+            thresholdValues[i].noteNumber = heldNotes[i];
+            
+            if (thresholdValues[i].noteNumber != -1)
+            {
+                thresCounter++;
+            }
+        }
+        numThresholds = thresCounter;
     }
 
-    void setParams(int index, float phaseValue, int divisionValue, float opacityValue)
-    {
-        rotationValue[index].phase = phaseValue;
-        rotationValue[index].division = divisionValue;
-        repaint();
-    }
+    
     
 
-
+    // eventually three of these per rotation
+    int numThresholds;
+    
+    std::array<float, 32> angles;
+    
     struct RotationValue
     {
         bool state = true;
         float phase = 0.0f;
-        float division = 2;
+        float division;
+        std::array<float, 16> angles;
+        std::array<float, 16> threshold;
+        
+        float opacity;
+        juce::Colour color = {255, 255, 255};
     };
     std::array<RotationValue, 3> rotationValue;
+
+    struct Threshold
+    {
+        float anglePosition;
+        bool threshold;
+        int noteNumber;
+    };
+    
+    std::array<Threshold, 16> thresholdValues;
+    std::array<float, 16> thresholdAngles;
+
     
 private:
     
 };
-*/

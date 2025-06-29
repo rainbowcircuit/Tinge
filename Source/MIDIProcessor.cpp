@@ -1,12 +1,3 @@
-/*
-  ==============================================================================
-
-    MIDIProcessor.cpp
-    Created: 13 May 2025 8:35:44pm
-    Author:  Takuma Matsui
-
-  ==============================================================================
-*/
 
 #include "MIDIProcessor.h"
 
@@ -14,155 +5,49 @@ void MIDIProcessor::prepareToPlay(double sampleRate)
 {
     this->sampleRate = sampleRate;
     
-    
-    // test populating with a Cmaj9
-    for (int i = 0; i < noteValue.size(); i++)
+        for (int i = 0; i < noteValue.size(); i++)
     {
         noteValue[i].noteNumber = -1;
         noteValue[i].isAvailable = true;
 
     }
-    numNoteOn = 7;
-
 }
-/*
-void MIDIProcessor::holdPitches(juce::MidiBuffer &m)
+
+void MIDIProcessor::holdPitches(juce::MidiBuffer &buffer)
 {
     juce::MidiBuffer filteredBuffer;
-    for (const juce::MidiMessageMetadata metadata : m)
+    for (const auto metadata : buffer)
     {
-        auto message = metadata.getMessage();
-        
-        if(message.isNoteOn())
+        const auto message = metadata.getMessage();
+
+        if (message.isNoteOn())
         {
-       //     latchedNote = message.getNoteNumber();
-         //   latchedNotes.add(latchedNote);
-//            hasLatchedNote = true;
-            
-        } else if (message.isNoteOff())
-        {
-     //       latchedNote = message.getNoteNumber();
-      //      latchedNotes.removeValue(latchedNote);
-            
-        } else
-        {
-            filteredBuffer.addEvent(message, metadata.samplePosition);
-            
-        }
-   //     hasLatchedNote = latchedNotes.isEmpty();
-    }
-    
-    m.swapWith(filteredBuffer);
-}
-*/
-
-void MIDIProcessor::holdPitches(juce::MidiBuffer &m)
-{
-    juce::MidiBuffer filteredBuffer;
-    for (const juce::MidiMessageMetadata metadata : m)
-    {
-        auto message = metadata.getMessage();
-        
-        for (int i = 0; i < noteValue.size(); i++){
-            auto& note = noteValue[i];
-            if(message.isNoteOn() && note.isAvailable)
+            for (auto& note : noteValue)
             {
-                int noteNumber = message.getNoteNumber();
-              //  if (juce::isPositiveAndBelow(noteNumber, 128))
-             //   {
-                    noteValue[i].noteNumber = noteNumber;
-                    noteValue[i].isAvailable = false;
-            //    }
-                
-            } else if (message.isNoteOff() && note.noteNumber == message.getNoteNumber()) {
-
-                noteValue[i].noteNumber = -1;
-                noteValue[i].isAvailable = true;
-
-            } else
-            {
-                filteredBuffer.addEvent(message, metadata.samplePosition);
-            }
-        }
-    }
-    m.swapWith(filteredBuffer);
-
-    
-    /*
-    juce::MidiBuffer filteredBuffer;
-    for (const juce::MidiMessageMetadata metadata : m)
-    {
-        auto message = metadata.getMessage();
-        numNoteOn = 0;
-        for (int i = 0; i < noteValue.size(); i++){
-            auto& note = noteValue[i];
-            if(message.isNoteOn() && note.isAvailable)
-            {
-                int noteNumber = message.getNoteNumber();
-                if (juce::isPositiveAndBelow(noteNumber, 128))
+                if (note.isAvailable)
                 {
-                    note.noteNumber = noteNumber;
+                    note.noteNumber = message.getNoteNumber();
+                    note.noteVelocity = message.getVelocity();
                     note.isAvailable = false;
+                    break;
                 }
-                
-            } else if (message.isNoteOff() && note.noteNumber == message.getNoteNumber())
-            {
-                note.noteNumber = 0;
-                note.isAvailable = true;
-            } else
-            {
-                filteredBuffer.addEvent(message, metadata.samplePosition);
             }
         }
-    }
-    
-    m.swapWith(filteredBuffer);
-     */
-    for (int i = 0; i < activeNoteOn.size(); i++)
-    {
-  //      DBG("index: " << i << "notenumber: " << noteValue[i].noteNumber);
-    }
-}
-
-
-void MIDIProcessor::notePlayback(juce::MidiBuffer& midiBuffer, int samplePosition, bool gate)
-{
-    /*
-    if(gate && !previousGate)
-    {
-//        int noteToPlay = latchedNotes[playbackIndex];
-        noteOn(midiBuffer, samplePosition, noteToPlay, 120);
-        activeNote = noteToPlay;
-        
-        if(!hasLatchedNote)
+        else if (message.isNoteOff())
         {
-            playbackIndex += indexAccum;
-            
-            if (playbackIndex >= latchedNotes.size()) {
-                playbackIndex = 0;
-            } else if (playbackIndex < 0) {
-                playbackIndex = latchedNotes.size();
+            for (auto& note : noteValue)
+            {
+                if (!note.isAvailable && note.noteNumber == message.getNoteNumber())
+                {
+                    note.noteNumber = -1;
+                    note.noteVelocity = message.getVelocity();
+                    note.isAvailable = true;
+                    break;
+                }
             }
-            
-        } else {
-            hasLatchedNote = false;
         }
     }
-    
-    else if (!gate && previousGate && activeNote >= 0)
-    {
-        noteOff(midiBuffer, samplePosition, activeNote);
-        activeNote = -1;
-    }
-    
-    previousGate = gate;
-     */
-}
-
-void MIDIProcessor::setDirection(bool direction)
-{
-  //  this->direction = direction;
- //   indexAccum = direction ? 1 : -1;
+    buffer.swapWith(filteredBuffer);
 }
 
 

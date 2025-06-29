@@ -11,8 +11,8 @@
 #include "UserInterfaceLayout.h"
 
 //==============================================================================
-TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, std::atomic<float>& phase1, std::atomic<float>& phase2, std::atomic<float>& phase3)
-    : AudioProcessorEditor (&p), phaseAtomic1(phase1), phaseAtomic2(phase2), phaseAtomic3(phase3), audioProcessor (p)
+TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, std::atomic<std::array<float, 3>>& phases, std::atomic<std::array<float, 16>>& noteValues)
+    : AudioProcessorEditor (&p), phasesAtomic(phases), noteValuesAtomic(noteValues), audioProcessor (p)
 {
     addAndMakeVisible(spinnerGraphics);
     // Make sure that before the constructor has finished, you've set the
@@ -44,7 +44,7 @@ TingeAudioProcessorEditor::~TingeAudioProcessorEditor()
 void TingeAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll(juce::Colour(200, 200, 200));
+    g.fillAll(juce::Colour(45, 44, 43));
 
     
     
@@ -61,25 +61,26 @@ void TingeAudioProcessorEditor::resized()
 
 void TingeAudioProcessorEditor::timerCallback()
 {
-    phase0 = phaseAtomic1.load();
-    phase1 = phaseAtomic2.load();
-    phase2 = phaseAtomic3.load();
+    
+    phases = phasesAtomic.load();
+    
+    
+    for (int index = 0; index < 3; index++)
+    {
+        juce::String stateID = "state" + juce::String(index);
+        juce::String divisionID = "division" + juce::String(index);
+        juce::String opacityID = "opacity" + juce::String(index);
 
-    int division0 = audioProcessor.apvts.getRawParameterValue("division0")->load();
-    int division1 = audioProcessor.apvts.getRawParameterValue("division1")->load();
-    int division2 = audioProcessor.apvts.getRawParameterValue("division2")->load();
-
-    int state0 = audioProcessor.apvts.getRawParameterValue("state0")->load();
-    int state1 = audioProcessor.apvts.getRawParameterValue("state1")->load();
-    int state2 = audioProcessor.apvts.getRawParameterValue("state2")->load();
-
-    float opacity0 = audioProcessor.apvts.getRawParameterValue("opacity0")->load();
-    float opacity1 = audioProcessor.apvts.getRawParameterValue("opacity1")->load();
-    float opacity2 = audioProcessor.apvts.getRawParameterValue("opacity2")->load();
-
-    spinnerGraphics.setParams(0, phase0, division0, state0, opacity0);
-    spinnerGraphics.setParams(1, phase1, division1, state1, opacity1);
-    spinnerGraphics.setParams(2, phase2, division2, state2, opacity2);
-
+        int state = audioProcessor.apvts.getRawParameterValue(stateID)->load();
+        int division = audioProcessor.apvts.getRawParameterValue(divisionID)->load();
+        int opacity = audioProcessor.apvts.getRawParameterValue(opacityID)->load();
+    
+    spinnerGraphics.setParams(index, phases[index], division, state, opacity);
+    }
+    
+    std::array<float, 16> heldNotes = noteValuesAtomic.load();
+    spinnerGraphics.setNumThresholds(heldNotes);
+    spinnerGraphics.processThreshold();
+    spinnerGraphics.processAngles();
     
 }

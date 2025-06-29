@@ -1,9 +1,16 @@
-
 #pragma once
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "Graphics.h"
 
+
+class GlobalControlLayout : public juce::Component, juce::Button::Listener
+{
+public:
+    
+private:
+    
+};
 
 class RotationLayout : public juce::Component, juce::Button::Listener
 {
@@ -35,7 +42,10 @@ public:
         
         addAndMakeVisible(stateButton);
         stateButton.setToggleable(true);
-        stateButton.addListener(this);
+        stateButton.setClickingTogglesState(true);
+        stateAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.apvts, "state" + juce::String(index), stateButton);
+
+        stateButton.setToggleable(true);
         
     }
     
@@ -49,7 +59,7 @@ public:
     {
         auto bounds = getLocalBounds().toFloat();
         bounds.reduce(5, 5);
-        g.setColour(juce::Colour(170, 170, 17050)); // for now
+        g.setColour(juce::Colour(170, 170, 170)); // for now
         g.fillRoundedRectangle(bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight(), 10);
     }
     
@@ -86,6 +96,7 @@ public:
             float nudgeValue = b->isDown() ? 1.0f : 0.0f;
             juce::String nudgeBackwardID = "nudgeBackward" + juce::String(index);
             audioProcessor.apvts.getParameter(nudgeBackwardID)->setValueNotifyingHost(nudgeValue);
+            
         } else if (b == &stateButton){
             bool state = stateButton.getToggleState();
             juce::String stateID = "state" + juce::String(index);
@@ -100,7 +111,8 @@ public:
         label.setText(labelText, juce::dontSendNotification);
         label.setColour(juce::Label::textColourId, juce::Colour(80, 80, 80));
         label.setJustificationType(juce::Justification::centred);
-        label.setFont(12.0f);
+        juce::FontOptions font(12.0f, juce::Font::plain);
+        label.setFont(font);
 
         // slider
         addAndMakeVisible(slider);
@@ -114,11 +126,25 @@ private:
     bool state;
     DialGraphics emptyGraphic { 0 }, divisionGraphic { 1 };
     
-    juce::Slider rateFreeSlider, rateSyncSlider, divisionSlider, nudgeStrengthSlider, opacitySlider;
-    juce::Label rateLabel, divisionLabel, nudgeStrengthLabel, nudgeBackwardLabel, nudgeForwardLabel;
+    juce::Slider rateFreeSlider,
+    rateSyncSlider,
+    divisionSlider,
+    nudgeStrengthSlider,
+    opacitySlider;
+    
+    juce::Label rateLabel,
+    divisionLabel,
+    nudgeStrengthLabel,
+    nudgeBackwardLabel,
+    nudgeForwardLabel;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
-    rateFreeAttachment, rateSyncAttachment, divisionAttachment, opacityAttachment;
+    rateFreeAttachment,
+    rateSyncAttachment,
+    divisionAttachment,
+    opacityAttachment;
+
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> stateAttachment;
 
     juce::TextButton nudgeBackwardButton, nudgeForwardButton;
     juce::ToggleButton stateButton;

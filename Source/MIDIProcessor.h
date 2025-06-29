@@ -11,67 +11,81 @@
 #pragma once
 #include <JuceHeader.h>
 #include "DSP.h"
+#include "InteractionLogic.h"
 
-class MIDIProcessor
+class MIDIProcessor : public Interaction
 {
 public:
+
+    
+    
     void prepareToPlay(double sampleRate);
     void holdPitches(juce::MidiBuffer &m);
-    void notePlayback(juce::MidiBuffer& midiBuffer, int samplePosition, bool gate);
-    void setDirection(bool direction);
+    int nextAvailableIndex = 0;
+    
+    
+    std::array<float, 16> getheldPitches()
+    {
+        std::array<float, 16> heldPitches = {};
+        for (int i = 0; i < heldPitches.size(); i++)
+        {
+            heldPitches[i] = noteValue[i].noteNumber;
+        }
+        return heldPitches;
+    }
+    
+    int getNumHeldNotes()
+    {
+        int noteCount = 0;
+        for(int i = 0; i < 16; i++)
+        {
+            if (!noteValue[i].isAvailable)
+            {
+                noteCount++;
+            }
+        }
+        return noteCount;
+    }
     
     void noteOn(juce::MidiBuffer& midiBuffer, int samplePosition, int noteNumber, int noteVelocity);
     void noteOff(juce::MidiBuffer& midiBuffer, int samplePosition, int noteNumber);
 
+    void processInteraction()
+    {
+        setNumThresholds(getheldPitches());
+        processThreshold();
+        processAngles();
+    }
+        
+    void notePlayback(juce::MidiBuffer& midiBuffer, int samplePosition)
+    {
+        for (int i = 0; i < numThresholds; i++)
+        {
+            bool bool0 = rotationValue[0].threshold[i] > 0.0f && rotationValue[0].state;
+            bool bool1 = rotationValue[1].threshold[i] > 0.0f && rotationValue[1].state;
+            bool bool2 = rotationValue[2].threshold[i] > 0.0f && rotationValue[2].state;
+            
+            if ((bool0 || bool1 || bool2) && !noteValue[i].isOn)
+            {
+                noteOn(midiBuffer, samplePosition, noteValue[i].noteNumber, 128);
+                noteValue[i].isOn = true;
+                
+            } else if (!(bool0 || bool1 || bool2) && noteValue[i].isOn){
+                noteOff(midiBuffer, samplePosition, noteValue[i].noteNumber);
+                noteValue[i].isOn = false;
+            }
+        }
+    }
+    
     void setSpinnerValues(int index, bool state, float phase, float division, float opacity)
     {
         rotationValue[index].state = state;
         rotationValue[index].phase = phase;
         rotationValue[index].division = division;
-        rotationValue[index].opacity = opacity;
     }
     
-    void spinnerInteraction(juce::MidiBuffer& midiBuffer, int samplePosition)
-    {
-        if(numNoteOn == 0)
-            return;        
-        
-        for (int j = 0; j < numNoteOn; ++j)
-        {
-            auto& note = noteValue[j];
-            float triggerPos = (1.0f / numNoteOn) * j;
-
-                bool threshold1 = false;
-                bool threshold2 = false;
-                bool threshold3 = false;
-
-            for (int k = 0; k < rotationValue[0].division; ++k)
-                threshold1 = rotationValue[0].threshold(k, triggerPos) && rotationValue[0].state;
-
-                for (int l = 0; l < rotationValue[1].division; ++l)
-                threshold2 = rotationValue[1].threshold(l, triggerPos) && rotationValue[1].state;
-            
-            for (int m = 0; m < rotationValue[2].division; ++m)
-                threshold3 = rotationValue[2].threshold(m, triggerPos) && rotationValue[2].state;
-            
-                bool threshold = threshold1 || threshold2 || threshold3;
-            
-                if (threshold && !note.isOn && !note.isAvailable) {
-             //       DBG(note.noteNumber);
-                    noteOn(midiBuffer, samplePosition, note.noteNumber, 1.0f);
-                    note.isOn = true;
-                    
-                } else if (!threshold && note.isOn && !note.isAvailable) {
-                    noteOff(midiBuffer, samplePosition, note.noteNumber);
-                    note.isOn = false;
-                }
-            }
-    }
-
-    
-private:
     double sampleRate;
-    
+  //  int numThresholds;
     struct NoteValue
     {
         int noteNumber;
@@ -79,39 +93,9 @@ private:
         bool isOn = false;
         bool isAvailable = true;
     };
-    
-    struct RotationValue
-    {
-        bool state;
-        float phase;
-        float division = 2;
-        float opacity = 2;
-        float size = 1.0f / division;
-        
-        float wrapPhase(float x) noexcept
-        {
-            return x - floorf(x);
-        }
 
-        bool isWithinRange(float x, float a, float b) noexcept
-        {
-            if (a < b) return x >= a && x < b;
-            return x <= a && x > b;
-        }
-        
-        bool threshold(int i, float position)
-        {
-            float start = wrapPhase(phase + i * size);
-            float end = wrapPhase(phase + (i + 1) * size);
-
-            return isWithinRange(position, start, end);
-        }
-    };
-    
-    std::array<RotationValue, 3> rotationValue;
     
     std::array<NoteValue, 16> noteValue;
-    juce::SortedSet<int> activeNoteOn;
     int numNoteOn;
 };
 
