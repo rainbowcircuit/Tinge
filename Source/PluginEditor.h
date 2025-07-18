@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "Graphics.h"
+#include "LookAndFeel.h"
 #include "UserInterfaceLayout.h"
 #include "InteractionLogic.h"
 //==============================================================================
@@ -28,17 +29,55 @@ public:
 
     //==============================================================================
     void timerCallback() override;
+    void mouseDown(const juce::MouseEvent& event) override
+    {
+            if (isoView){
+                isoEnterToggle.start();
+                isoView = false;
+            } else {
+                isoExitToggle.start();
+                isoView = true;
+            }
+    }
+    
 private:
-    // This reference is provided as a quick way for your editor to
-    // access the processor object that created it.
+    
+    bool isoView = false;
+    float animationValue;
+    juce::VBlankAnimatorUpdater updater { this };
+    
+    juce::Animator isoEnterToggle = juce::ValueAnimatorBuilder {}
+        .withEasing(juce::Easings::createEaseInOut())
+        .withDurationMs(1800.0f)
+        .withValueChangedCallback([this] (auto value){ // lambda function
+            animationValue = 1.0f - value;
+            repaint();
+        })
+        .build();
+    
+    juce::Animator isoExitToggle = juce::ValueAnimatorBuilder {}
+        .withEasing(juce::Easings::createEaseInOut())
+        .withDurationMs(1800.0f)
+        .withValueChangedCallback([this] (auto value){ // lambda function
+            animationValue = value;
+            repaint();
+        })
+        .build();
+
+
+
+
+
     std::atomic<std::array<float, 3>>& phasesAtomic;
     std::array<float, 3> phases;
 
     std::atomic<std::array<float, 16>>& noteValuesAtomic;
 
-    juce::Slider rate1Slider, rate2Slider, rate3Slider, division1Slider, division2Slider, division3Slider;
+    DialGraphics overlapLAF { 3 };
+    juce::Slider noteScaleSlider, velocityScaleSlider, controlScaleSlider, overlapSlider;
+    
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
-    rate1Attachment, rate2Attachment, rate3Attachment, division1Attachment, division2Attachment, division3Attachment;
+    noteScaleAttachment, velocityScaleAttachment, controlScaleAttachment, overlapAttachment;
     
     juce::TextButton state1Button, state2Button, state3Button;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>
@@ -48,8 +87,8 @@ private:
     SpinnerGraphics spinnerGraphics;
 
     std::unique_ptr<RotationLayout> rotationLayout1, rotationLayout2, rotationLayout3;
-    
-    
+    std::unique_ptr<GlobalControlLayout> globalLayout;
+    std::unique_ptr<ValueAssignmentLayout> valueAssignmentLayout;
     TingeAudioProcessor& audioProcessor;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TingeAudioProcessorEditor)

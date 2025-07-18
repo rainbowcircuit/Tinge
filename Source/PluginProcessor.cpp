@@ -13,12 +13,10 @@
 TingeAudioProcessor::TingeAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
-                     #if ! JucePlugin_IsMidiEffect
                       #if ! JucePlugin_IsSynth
                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
                       #endif
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-                     #endif
                        )
 #endif
 {
@@ -54,11 +52,7 @@ bool TingeAudioProcessor::producesMidi() const
 
 bool TingeAudioProcessor::isMidiEffect() const
 {
-   #if JucePlugin_IsMidiEffect
-    return true;
-   #else
-    return false;
-   #endif
+    return JucePlugin_IsMidiEffect;
 }
 
 double TingeAudioProcessor::getTailLengthSeconds() const
@@ -94,11 +88,10 @@ void TingeAudioProcessor::changeProgramName (int index, const juce::String& newN
 void TingeAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     for (int index = 0; index < 3; index++){
-        rotation[index].setSampleRate(sampleRate);
         rotation[index].reset();
+        rotation[index].setSampleRate(sampleRate);
     }
     midiProcessor.prepareToPlay(sampleRate);
-    
 }
 
 void TingeAudioProcessor::releaseResources()
@@ -135,52 +128,56 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
+    /*
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
-    
+    */
     
     midiProcessor.holdPitches(midiMessages);
+    
+    float globalNudgeForward = apvts.getRawParameterValue("globalNudgeForward")->load();
+    float globalNudgeBackward = apvts.getRawParameterValue("globalNudgeBackward")->load();
+    float globalBrake = apvts.getRawParameterValue("globalBrake")->load();
+    float globalStrength = apvts.getRawParameterValue("globalStrength")->load();
+
+    float noteScale = apvts.getRawParameterValue("noteScale")->load();
+    
+    float velocityScale = apvts.getRawParameterValue("velocityScale")->load();
+    float controlScale = apvts.getRawParameterValue("controlScale")->load();
+
+    float overlap = apvts.getRawParameterValue("overlap")->load();
+    midiProcessor.setOverlap(overlap);
 
     for(int sample = 0; sample < buffer.getNumSamples(); ++sample){
         heldPitches = midiProcessor.getheldPitches();
-        int numHeldPitches = midiProcessor.getNumHeldNotes();
         
-        
-        float globalNudgeForward = apvts.getRawParameterValue("globalNudgeForward")->load();
-        float globalNudgeBackward = apvts.getRawParameterValue("globalNudgeBackward")->load();
-        float globalBrake = apvts.getRawParameterValue("globalBrake")->load();
-
         for(int index = 0; index < 3; index++)
         {
             juce::String stateID = "state" + juce::String(index);
             juce::String rateFreeID = "rateFree" + juce::String(index);
             juce::String rateSyncID = "rateSync" + juce::String(index);
             juce::String divisionID = "division" + juce::String(index);
+            juce::String phaseID = "phase" + juce::String(index);
             juce::String opacityID = "opacity" + juce::String(index);
-
-            juce::String nudgeForwardID = "nudgeForward" + juce::String(index);
-            juce::String nudgeBackwardID = "nudgeBackward" + juce::String(index);
-            juce::String nudgeStrengthID = "nudgeSrength" + juce::String(index);
 
             float state = apvts.getRawParameterValue(stateID)->load();
             float rateFree = apvts.getRawParameterValue(rateFreeID)->load();
             float rateSync = apvts.getRawParameterValue(rateSyncID)->load();
             float division = apvts.getRawParameterValue(divisionID)->load();
             float opacity = apvts.getRawParameterValue(opacityID)->load();
-
-            float nudgeStrength = apvts.getRawParameterValue(nudgeStrengthID)->load();
-            float nudgeForward = apvts.getRawParameterValue(nudgeForwardID)->load();
-            float nudgeBackward = apvts.getRawParameterValue(nudgeBackwardID)->load();
+            float phase = apvts.getRawParameterValue(phaseID)->load();
             
-            rotation[index].setRate(index, rateFree, 0);
-            rotation[index].nudge(nudgeStrength, nudgeForward, nudgeBackward);
+            rotation[index].setRate(index, rateFree, 0, phase);
+            rotation[index].nudge(globalStrength,
+                                  globalNudgeForward,
+                                  globalNudgeBackward,
+                                  globalBrake); // eventually only "global nudges
             rotation[index].accumulate();
             phases[index] = rotation[index].getPhase();
 
+            midiProcessor.setScaling(noteScale, velocityScale, controlScale, 0.0f);
             midiProcessor.setSpinnerValues(index, state, rotation[index].getPhase(), division, opacity);
-
         }
-        
         
         // midi output processing
         midiProcessor.setNumThresholds(heldPitches);
@@ -188,12 +185,14 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
         midiProcessor.processAngles();
         midiProcessor.processInteraction();
         
-        midiProcessor.notePlayback(midiMessages, sample);
-        
+
         
         phasesAtomic.store(phases);
         heldPitchesAtomic.store(heldPitches);
+
     }
+    midiProcessor.notePlayback(midiMessages);
+
 }
 
 //==============================================================================
@@ -210,15 +209,10 @@ juce::AudioProcessorEditor* TingeAudioProcessor::createEditor()
 //==============================================================================
 void TingeAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
-    // You should use this method to store your parameters in the memory block.
-    // You could do that either as raw data, or use the XML or ValueTree classes
-    // as intermediaries to make it easy to save and load complex data.
 }
 
 void TingeAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
-    // You should use this method to restore your parameters from this memory block,
-    // whose contents will have been created by the getStateInformation() call.
 }
 
 //==============================================================================
@@ -232,80 +226,113 @@ juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
 juce::AudioProcessorValueTreeState::ParameterLayout
 TingeAudioProcessor::createParameterLayout()
 {
-        juce::AudioProcessorValueTreeState::ParameterLayout layout;
+    juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
-        layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalNudgeForward", 1},
-                                                             "Global Nudge Forward",
-                                                             0, 1, 0));
-    
-        layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalNudgeBackward", 1},
-                                                         "Global Nudge Backward",
+    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalNudgeForward", 1},
+                                                         "Global Nudge Forward",
                                                          0, 1, 0));
-    
-        layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalBrake", 1},
-                                                     "Global Brake",
+
+    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalNudgeBackward", 1},
+                                                     "Global Nudge Backward",
                                                      0, 1, 0));
 
+    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalBrake", 1},
+                                                 "Global Brake",
+                                                 0, 1, 0));
 
-        for(int rotation = 0; rotation < 3; rotation++)
-        {
-            juce::String stateID = "state" + juce::String(rotation);
-            juce::String stateName = "State " + juce::String(rotation);
-            
-            layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID { stateID, 1},
-                                                                   stateName,
-                                                                   true));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "globalStrength", 1},
+                                                           "Global Strength",
+                                                           juce::NormalisableRange<float> { 0.0f, 100.0f, 0.1 }, 0.0f));
 
-            juce::String rateFreeID = "rateFree" + juce::String(rotation);
-            juce::String rateFreeName = "Rate Free " + juce::String(rotation);
-            
-            layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { rateFreeID, 1},
-                                                                   rateFreeName,
-                                                                   juce::NormalisableRange<float> { -5.0f, 5.0f, 0.01 }, 0.0f));
-            
-            juce::String opacityID = "opacity" + juce::String(rotation);
-            juce::String opacityName = "Opacity " + juce::String(rotation);
-            
-            layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { opacityID, 1},
-                                                                   rateFreeName,
-                                                                   juce::NormalisableRange<float> { 0.0, 1.0f, 0.01 }, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalReset", 1},
+                                                 "Global Reset",
+                                                 0, 1, 0));
 
-            juce::String rateSyncID = "rateSync" + juce::String(rotation);
-            juce::String rateSyncName = "Rate Sync " + juce::String(rotation);
+    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "overlap", 1},
+                                                           "Overlap", 0, 6, 6));
 
-            layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { rateSyncID, 1},
-                                                                   rateSyncName,
-                                                                   juce::NormalisableRange<float> { -5.0f, 5.0f, 0.01 }, 0.0f));
-            
-            juce::String divisionID = "division" + juce::String(rotation);
-            juce::String DivisionName = "Division " + juce::String(rotation);
+    
+    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "noteScale", 1},
+                                                           "Note Scale", -36, 36, 0));
+    
+    layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID { "keyQuantize", 1},
+                                                            "Scale Choices", juce::StringArray { "C", "C#/Db", "D", "D#/Eb", "E", "F", "F#/Gb", "G", "G#/Ab", "A", "A#/Bb", "B" }, 0));
 
-            layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { divisionID, 1},
-                                                                   DivisionName,
-                                                                   1, 6, 3));
+    layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID { "scaleQuantize", 1},
+                                                            "Scale Choices", juce::StringArray { "Chromatic", "Major", "Major Pentatonic", "Lydian", "Mixolydian", "Phrygian Dominant", "Natural Minor", "Minor Pentatonic", "Harmonic Minor", "Melodic Minor", "Dorian", "Phrygian", "Locrian" }, 0));
+    
+    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "velocityScale", 1},
+                                                           "velocity Scale", -127, 127, 0));
 
+    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "controlScale", 1},
+                                                           "Control Scale", -127, 127, 0));
+    
+    layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID { "resetMode", 1},
+                                                        "Reset Mode",
+                                                        juce::StringArray { "No Reset", "External Reset", "Reset on Note Clear", "Reset On Note On" }, 0));
+    
+    for(int rotation = 0; rotation < 3; rotation++)
+    {
+        juce::String stateID = "state" + juce::String(rotation);
+        juce::String stateName = "State " + juce::String(rotation);
+        
+        layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID { stateID, 1},
+                                                               stateName,
+                                                               true));
 
-            juce::String nudgeForwardID = "nudgeForward" + juce::String(rotation);
-            juce::String nudgeForwardName = "Nudge Forward" + juce::String(rotation);
+        juce::String rateFreeID = "rateFree" + juce::String(rotation);
+        juce::String rateFreeName = "Rate Free " + juce::String(rotation);
+        
+        layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { rateFreeID, 1},
+                                                               rateFreeName,
+                                                               juce::NormalisableRange<float> { -5.0f, 5.0f, 0.01 }, 0.0f));
+        
+        juce::String opacityID = "opacity" + juce::String(rotation);
+        juce::String opacityName = "Opacity " + juce::String(rotation);
+        
+        layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { opacityID, 1},
+                                                               rateFreeName,
+                                                               juce::NormalisableRange<float> { 0.0, 1.0f, 0.01 }, 0.0f));
 
-            layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { nudgeForwardID, 1},
-                                                                 nudgeForwardName,
-                                                                 0, 1, 0));
-            
-            juce::String nudgeBackwardID = "nudgeBackward" + juce::String(rotation);
-            juce::String nudgeBackwardName = "Nudge Backward" + juce::String(rotation);
+        juce::String rateSyncID = "rateSync" + juce::String(rotation);
+        juce::String rateSyncName = "Rate Sync " + juce::String(rotation);
 
-            layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { nudgeBackwardID, 1},
-                                                                 nudgeBackwardName,
-                                                                 0, 1, 0));
+        layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID { rateSyncID, 1},
+                                                                rateSyncName, juce::StringArray {
+            "Reverse 32nd Triplet", "Reverse 32nd", "Reverse 16th Triplet", "Reverse 16th",
+            "Reverse 8th Triplet", "Reverse 16th Dotted", "Reverse 8th", "Reverse Quarter Triplet",
+            "Reverse 8th Dotted", "Reverse Quarter", "Reverse Half Triplet", "Reverse Quarter Dotted",
+            "Reverse Half", "Reverse Whole Triplet", "Reverse Half Dotted", "Reverse Whole",
+            "Reverse 2 Measures Triplet", "Reverse Whole Dotted", "Reverse 2 Measures", "Reverse 2 Measures Dotted",
+            "Reverse 4 Measures", "Reverse 8 Measures", "Static", "8 Measures", "4 Measures",
+            "2 Measures Dotted", "2 Measures", "Whole Dotted", "2 Measures Triplet", "Whole",
+            "Half Dotted", "Whole Triplet", "Half", "Quarter Dotted",
+            "Half Triplet", "Quarter", "8th Dotted", "Quarter Triplet",
+            "8th", "16th Dotted", "8th Triplet", "16th", "16th Triplet", "32nd", "32nd Triplet"
+        }, 22));
 
-            juce::String nudgeStrengthID = "nudgeSrength" + juce::String(rotation);
-            juce::String nudgeStrengthName = "Nudge Strength" + juce::String(rotation);
+        juce::String divisionID = "division" + juce::String(rotation);
+        juce::String DivisionName = "Division " + juce::String(rotation);
 
-            layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { nudgeStrengthID, 1},
-                                                                   nudgeStrengthName,
-                                                                   juce::NormalisableRange<float> { 0.0f, 20000.0f, 0.01 }, 4000.0f));
-        }
+        layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { divisionID, 1},
+                                                               DivisionName,
+                                                               juce::NormalisableRange<float> { 1.0f, 5.0f, 0.01 }, 0.0f));
 
-        return layout;
+        juce::String phaseID = "phase" + juce::String(rotation);
+        juce::String phaseName = "Phase " + juce::String(rotation);
+
+        layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { phaseID, 1},
+                                                               phaseName,
+                                                               juce::NormalisableRange<float> { 0.0f, 100.0f, 0.01 }, 0.0f));
+
+        juce::String nudgeStrengthID = "nudgeSrength" + juce::String(rotation);
+        juce::String nudgeStrengthName = "Nudge Strength" + juce::String(rotation);
+
+        layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { nudgeStrengthID, 1},
+                                                               nudgeStrengthName,
+                                                               juce::NormalisableRange<float> { 0.0f, 20000.0f, 0.01 }, 10000.0f));
+         
+    }
+
+    return layout;
 }

@@ -50,6 +50,29 @@ void MIDIProcessor::holdPitches(juce::MidiBuffer &buffer)
     buffer.swapWith(filteredBuffer);
 }
 
+std::array<float, 16> MIDIProcessor::getheldPitches()
+{
+    std::array<float, 16> heldPitches = {};
+    for (int i = 0; i < heldPitches.size(); i++)
+    {
+        heldPitches[i] = noteValue[i].noteNumber;
+    }
+    return heldPitches;
+}
+
+int MIDIProcessor::getNumHeldNotes()
+{
+    int noteCount = 0;
+    for(int i = 0; i < 16; i++)
+    {
+        if (!noteValue[i].isAvailable)
+        {
+            noteCount++;
+        }
+    }
+    return noteCount;
+}
+
 
 void MIDIProcessor::noteOn(juce::MidiBuffer& midiBuffer, int samplePosition, int noteNumber, int noteVelocity)
 {
@@ -69,13 +92,16 @@ void Spinner::setSampleRate(double sampleRate)
     this->sampleRate = sampleRate;
     forwardLPG.setSampleRate(sampleRate);
     backwardLPG.setSampleRate(sampleRate);
+    brakeLPG.setSampleRate(sampleRate);
+
 }
 
-void Spinner::setRate(int rateBPM, float rateFree, bool isSynced)
+void Spinner::setRate(int rateBPM, float rateFree, bool isSynced, float phaseOffset)
 {
     this->rateBPM = rateBPM;
     this->rateFree = rateFree;
     this->isSynced = isSynced;
+    this->phaseOffset = phaseOffset;
 }
 
 void Spinner::reset()
@@ -106,7 +132,7 @@ void Spinner::setDivision(int division)
     
 }
 
-void Spinner::nudge(float nudgeStrength, int nudgeForward, int nudgeBackward)
+void Spinner::nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, int brake)
 {
     float riseScaled = nudgeStrength * 4.0f;
     float fallScaled = nudgeStrength;
@@ -121,22 +147,28 @@ void Spinner::nudge(float nudgeStrength, int nudgeForward, int nudgeBackward)
     
     forwardLPG.setEnvelopeSlew(riseScaled, fallScaled);
     backwardLPG.setEnvelopeSlew(riseScaled, fallScaled);
+    brakeLPG.setEnvelopeSlew(sampleRate/50.0f, sampleRate/50.0f);
 
     forwardLPG.triggerEnvelope(nudgeForward);
     backwardLPG.triggerEnvelope(nudgeBackward);
+    brakeLPG.triggerEnvelope(brake);
+    
 }
 
 void Spinner::accumulate()
 {
-    float nudgeValue = (forwardLPG.generateEnvelope() + (backwardLPG.generateEnvelope() * -1.0f)) * 6.0f;
-
+    float nudgeValue = (forwardLPG.generateEnvelope() + (backwardLPG.generateEnvelope() * -1.0f)) * 10.0f;
+    
+    float brakeValue = (1.0f - brakeLPG.generateEnvelope());
+    
     if (!isSynced)
     {
-        phase += (rateFree + nudgeValue)/sampleRate;
+        float rateInHz = (rateFree + nudgeValue)/sampleRate;
+        phase += rateInHz * brakeValue;
         
     } else {
         float bpmInHz = (bpm/60.0f) + nudgeValue * subdivisionMultiplier[rateBPM];
-        phase += bpmInHz;
+        phase += bpmInHz * brakeValue;
     }
     if (phase > 1.0f) phase -= 1.0f;
 
@@ -145,7 +177,8 @@ void Spinner::accumulate()
 
 float Spinner::getPhase()
 {
-    return phase;
+    float offset = phaseOffset/100.0f;
+    return fmodf(phase + offset, 1.0f);
 }
 
 bool Spinner::getDirection()

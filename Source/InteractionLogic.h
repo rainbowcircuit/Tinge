@@ -95,7 +95,57 @@ public:
         numThresholds = thresCounter;
     }
 
-    
+    bool getTriggerCondition(int i, int overlap)
+    {
+        bool A = rotationValue[0].threshold[i] > 0.0f && rotationValue[0].state;
+        bool B = rotationValue[1].threshold[i] > 0.0f && rotationValue[1].state;
+        bool C = rotationValue[2].threshold[i] > 0.0f && rotationValue[2].state;
+        
+        bool triggerCondition = (A || B || C);
+        if (overlap == 0)
+        {
+            triggerCondition =
+            (A && !B && !C) ||
+            (!A && B && !C) ||
+            (!A && !B && C);
+            
+        } else if (overlap == 1) {
+            triggerCondition =
+            (A && B && !C) ||
+            (!A && B && C) ||
+            (A && !B && C);
+            
+        } else if (overlap == 2) {
+            triggerCondition =
+            (A && B && C);
+            
+        } else if (overlap == 3) {
+            triggerCondition =
+            (A && !B && !C) ||
+            (!A && B && !C) ||
+            (!A && !B && C) ||
+            (A && B && !C) ||
+            (!A && B && C) ||
+            (A && !B && C);
+
+        } else if (overlap == 4) {
+            triggerCondition = (A && !B && !C) ||
+            (!A && B && !C) ||
+            (!A && !B && C) ||
+            (A && B && C);
+            
+        } else if (overlap == 5) {
+            triggerCondition = (A && B && !C) ||
+            (!A && B && C) ||
+            (A && B && C) ||
+            (A && B && C);
+            
+        } else if (overlap == 6) {
+            triggerCondition = (A || B || C);
+        }
+        return triggerCondition;
+    }
+
     
 
     // eventually three of these per rotation
@@ -111,9 +161,32 @@ public:
         std::array<float, 16> angles;
         std::array<float, 16> threshold;
         
+        //******* Graphics Code *******//
+        juce::Rectangle<float> sumBounds;
+        juce::Rectangle<float> bounds;
+        bool inFocus;
+        
         float opacity;
-        juce::Colour color = {255, 255, 255};
+        juce::Colour baseColor = { 255, 255, 255 };
+        juce::Colour hoverColor = { 255, 255, 255 };
+        
+        bool isMouseOver(const juce::MouseEvent& m)
+        {
+            auto mouse = m.getPosition().toFloat();
+            return bounds.contains(mouse);
+        }
+        
+        void setInFocus(bool inFocus)
+        {
+            this->inFocus = inFocus;
+        }
+        
+        bool getInFocus()
+        {
+            return inFocus;
+        }
     };
+    
     std::array<RotationValue, 3> rotationValue;
 
     struct Threshold

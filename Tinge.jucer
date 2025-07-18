@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="HhOoZn" name="Tinge" projectType="audioplug" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginCharacteristicsValue="pluginIsMidiEffectPlugin,pluginIsSynth,pluginProducesMidiOut,pluginWantsMidiIn"
+              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginCharacteristicsValue="pluginIsMidiEffectPlugin,pluginProducesMidiOut,pluginWantsMidiIn"
               companyName="Rainbow Circuit" companyWebsite="www.rainbowcircuit.co"
-              companyEmail="hey@rainbowcircuit.co" userNotes="New ways around MIDI with Daedelus.">
+              companyEmail="hey@rainbowcircuit.co" userNotes="New ways around MIDI with Daedelus."
+              pluginFormats="buildAU,buildStandalone,buildVST3">
   <MAINGROUP id="PYvzWc" name="Tinge">
     <GROUP id="{950D91BE-D0F5-3886-C586-153CA9CAB1B4}" name="Logic">
       <FILE id="rRrxRr" name="DSP.cpp" compile="1" resource="0" file="Source/DSP.cpp"/>
@@ -25,6 +26,10 @@
               file="Source/UserInterfaceLayout.cpp"/>
         <FILE id="GUTiMP" name="UserInterfaceLayout.h" compile="0" resource="0"
               file="Source/UserInterfaceLayout.h"/>
+        <FILE id="LQpkcx" name="UserInterfaceLookAndFeel.cpp" compile="1" resource="0"
+              file="Source/UserInterfaceLookAndFeel.cpp"/>
+        <FILE id="URT4hF" name="UserInterfaceLookAndFeel.h" compile="0" resource="0"
+              file="Source/UserInterfaceLookAndFeel.h"/>
       </GROUP>
       <FILE id="nXFhP8" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>

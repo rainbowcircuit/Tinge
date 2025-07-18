@@ -1,15 +1,10 @@
 #include "Graphics.h"
+/*
 SpinnerGraphics::SpinnerGraphics()
 {
     rotationValue[0].state = true;
     rotationValue[1].state = true;
     rotationValue[2].state = true;
-    
-    rotationValue[0].color = juce::Colour(255, 0, 0);
-    rotationValue[1].color = juce::Colour(0, 255, 0);
-    rotationValue[2].color = juce::Colour(0, 0, 255);
-    updater.addAnimator(isoEnterToggle);
-    updater.addAnimator(isoExitToggle);
 }
 
 void SpinnerGraphics::paint(juce::Graphics& g)
@@ -20,52 +15,53 @@ void SpinnerGraphics::paint(juce::Graphics& g)
     float x = bounds.getX();
     float y = bounds.getY();
     
-    float yOffset = yPosOffset * bounds.getHeight() * 2.0f;
-    float sumYOffset = yPosOffset * bounds.getHeight() * 0.5f;
+    float yOffset = animationValue * bounds.getHeight() * 2.0f;
+    float sumYScale = animationValue * bounds.getHeight() * 0.25f;
+    float sumYOffset = (1.0f - animationValue) * bounds.getHeight() * 0.45f;
 
-    juce::Path sumPath1 = wheelPath(g, 0, x + wheelMargin, y + 20 - sumYOffset, wheelWidth, wheelWidth);
-    juce::Path sumPath2 = wheelPath(g, 1, x + wheelMargin, y + 20 - sumYOffset, wheelWidth, wheelWidth);
-    juce::Path sumPath3 = wheelPath(g, 2, x + wheelMargin, y + 20 - sumYOffset, wheelWidth, wheelWidth);
+    juce::Path sumPath1 = wheelPath(g, 0, x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
+    juce::Path sumPath2 = wheelPath(g, 1, x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
+    juce::Path sumPath3 = wheelPath(g, 2, x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
     
-    g.setColour(juce::Colour(255, 70, 70));
+    g.setColour(Colors::graphicBlue);
     if (rotationValue[0].state) { g.fillPath(sumPath1); }
     
-    g.setColour(juce::Colour(70, 255, 150));
+    g.setColour(Colors::graphicGreen);
     if (rotationValue[1].state) { g.fillPath(sumPath2); }
 
-    g.setColour(juce::Colour(100, 120, 255));
+    g.setColour(Colors::graphicRed);
     if (rotationValue[2].state) { g.fillPath(sumPath3); }
 
 
     if (rotationValue[0].state && rotationValue[1].state) {
-        drawDoubleOverlap(g, sumPath1, sumPath2, juce::Colour(254, 241, 0));
+        drawDoubleOverlap(g, sumPath1, sumPath2, Colors::graphicCyan);
     }
     
     if (rotationValue[1].state && rotationValue[2].state) {
-        drawDoubleOverlap(g, sumPath2, sumPath3, juce::Colour(62, 71, 205));
+        drawDoubleOverlap(g, sumPath2, sumPath3, Colors::graphicYellow);
     }
 
     if (rotationValue[0].state && rotationValue[2].state) {
-        drawDoubleOverlap(g, sumPath1, sumPath3, juce::Colour(237, 28, 37));
+        drawDoubleOverlap(g, sumPath1, sumPath3, Colors::graphicMagenta);
     }
     
     if (rotationValue[0].state && rotationValue[1].state && rotationValue[2].state) {
-        drawTripleOverlap(g, sumPath1, sumPath2, sumPath3, juce::Colour(230, 230, 230));
+        drawTripleOverlap(g, sumPath1, sumPath2, sumPath3, Colors::graphicWhite);
     }
-    drawThreshold(g, x + wheelMargin, y + 20 - sumYOffset, wheelWidth, wheelWidth);
+    drawThreshold(g, x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
 
     
-    
-    juce::Path path1 = wheelPath(g, 0, x + wheelMargin, y - 50 - yOffset, wheelWidth, wheelWidth);
-    juce::Path path2 = wheelPath(g, 1, x + wheelMargin, y - 65 - yOffset, wheelWidth, wheelWidth);
-    juce::Path path3 = wheelPath(g, 2, x + wheelMargin, y - 80 - yOffset, wheelWidth, wheelWidth);
-    g.setColour(juce::Colour(255, 70, 70));
+    // b g r
+    juce::Path path1 = wheelPath(g, 0, x + wheelMargin, y + 80 - yOffset, wheelWidth, wheelWidth);
+    juce::Path path2 = wheelPath(g, 1, x + wheelMargin, y + 65 - yOffset, wheelWidth, wheelWidth);
+    juce::Path path3 = wheelPath(g, 2, x + wheelMargin, y + 50 - yOffset, wheelWidth, wheelWidth);
+    g.setColour(Colors::graphicBlue);
     if (rotationValue[0].state) { g.fillPath(path1); }
     
-    g.setColour(juce::Colour(70, 255, 150));
+    g.setColour(Colors::graphicGreen);
     if (rotationValue[1].state) { g.fillPath(path2); }
 
-    g.setColour(juce::Colour(100, 120, 255));
+    g.setColour(Colors::graphicRed);
     if (rotationValue[2].state) { g.fillPath(path3); }
 }
 
@@ -122,20 +118,29 @@ juce::Path SpinnerGraphics::wheelPath(juce::Graphics& g, int index, int x, int y
 void SpinnerGraphics::drawThreshold(juce::Graphics& g, int x, int y, int width, int height)
 {
     float twopi = juce::MathConstants<float>::twoPi;
-    float radius = width * 0.45f;
+    float pi = juce::MathConstants<float>::pi;
+
+    float innerRadius = width * 0.15f;
+    float outerRadius = width * 0.45f;
     
     for (int i = 0; i < numThresholds; i++)
     {
+        float angleOffset = fmodf(thresholdAngles[i] - pi - 0.1, 1.0f);
         if (numThresholds > 0){
-            float startCoords = (x + width/2) + std::cos(thresholdAngles[i] * twopi) * radius;
-            float endCoords = (y + height/isometricSkew) + std::sin(thresholdAngles[i] * twopi) * radius/isometricSkew;
             
+            float cos = std::cos(angleOffset * twopi);
+            float sin = std::sin(angleOffset * twopi);
+
+            juce::Point thresholdStart = { (x + width/2) + cos * innerRadius,
+                (y + height/isometricSkew) + sin * innerRadius/isometricSkew };
+            
+            juce::Point thresholdEnd = { (x + width/2) + cos * outerRadius,
+                (y + height/isometricSkew) + sin * outerRadius/isometricSkew };
+
             juce::Path graphicPath;
-            graphicPath.startNewSubPath(x + width/2, y + height/isometricSkew);
-            graphicPath.lineTo(startCoords, endCoords);
+            graphicPath.startNewSubPath(thresholdStart.x, thresholdStart.y);
+            graphicPath.lineTo(thresholdEnd.x, thresholdEnd.y);
             g.setColour(juce::Colour(40, 40, 40));
-            
-            
             
             bool bool0 = rotationValue[0].threshold[i] > 0.0f && rotationValue[0].state;
             bool bool1 = rotationValue[1].threshold[i] > 0.0f && rotationValue[1].state;
@@ -145,7 +150,9 @@ void SpinnerGraphics::drawThreshold(juce::Graphics& g, int x, int y, int width, 
                 juce::Colour myColour = juce::Colour(255, 255, 255);
                 g.setColour(myColour);
             }
-            g.strokePath(graphicPath, juce::PathStrokeType(2));
+            
+            juce::PathStrokeType strokeType(2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded);
+            g.strokePath(graphicPath, strokeType);
         }
     }
     
@@ -163,3 +170,4 @@ void SpinnerGraphics::setParams(int index, float phaseValue, int divisionValue, 
     repaint();
 }
 
+*/
