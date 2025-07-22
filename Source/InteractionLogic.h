@@ -69,6 +69,7 @@ public:
             rotationValue[index].threshold = getInteraction(rotationValue[index].angles,
                                                             thresholdAngles,
                                                             rotationValue[index].division);
+            
         }
     }
 

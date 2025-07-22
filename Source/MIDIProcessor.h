@@ -16,9 +16,6 @@
 class MIDIProcessor : public Interaction
 {
 public:
-
-    
-    
     void prepareToPlay(double sampleRate);
     void holdPitches(juce::MidiBuffer &m);
     int nextAvailableIndex = 0;
@@ -43,18 +40,7 @@ public:
         this->controllerScale = controllerScale;
         this->slewAmount = slewAmount;
     }
-    
-    void setVelocityScaling(int scale, int offset)
-    {
         
-    }
-    
-    void setControllerScaling(int scale, int offset)
-    {
-        
-    }
-    
-    
     void notePlayback(juce::MidiBuffer& midiBuffer)
     {
         if (numThresholds <= 0) { flushNote(midiBuffer); }
@@ -62,19 +48,19 @@ public:
         for (int i = 0; i < numThresholds; i++)
         {
             const bool triggerCondition = getTriggerCondition(i, overlap);
-
-            const float thresholdWeight = (rotationValue[0].threshold[i] + rotationValue[1].threshold[i] + rotationValue[2].threshold[i])/3.0f;
+            const float thresholdWeight = (rotationValue[0].threshold[i] * rotationValue[0].opacity +
+                                           rotationValue[1].threshold[i] * rotationValue[1].opacity +
+                                           rotationValue[2].threshold[i]) * rotationValue[2].opacity /3.0f;
                         
             int noteScaled = noteValue[i].noteNumber + (noteScale * thresholdWeight);
             const int currentNote = juce::jlimit(0, 127, noteScaled);
-
+            
             int velocityScaled = noteValue[i].noteVelocity + (velocityScale * thresholdWeight);
             const int currentVelocity = juce::jlimit(0, 127, velocityScaled);
             
             int controllerScaled = (controllerScale * thresholdWeight);
             const int currentController = juce::jlimit(0, 127, controllerScaled);
 
-            
             if (triggerCondition)
             {
                 if (!noteValue[i].isOn || noteValue[i].activeNoteNumber != currentNote)

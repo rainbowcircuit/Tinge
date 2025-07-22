@@ -92,12 +92,19 @@ void TingeAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         rotation[index].setSampleRate(sampleRate);
     }
     midiProcessor.prepareToPlay(sampleRate);
+    
+    const auto params = this->getParameters();
+    for (auto param : params){
+        param->addListener(this);
+    }
 }
 
 void TingeAudioProcessor::releaseResources()
 {
-    // When playback stops, you can use this as an opportunity to free up any
-    // spare memory, etc.
+    const auto params = this->getParameters();
+    for (auto param : params){
+        param->removeListener(this);
+    }
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -128,72 +135,38 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     auto totalNumInputChannels  = getTotalNumInputChannels();
     auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-    /*
     for (auto i = totalNumInputChannels; i < totalNumOutputChannels; ++i)
         buffer.clear (i, 0, buffer.getNumSamples());
-    */
     
     midiProcessor.holdPitches(midiMessages);
-    
-    float globalNudgeForward = apvts.getRawParameterValue("globalNudgeForward")->load();
-    float globalNudgeBackward = apvts.getRawParameterValue("globalNudgeBackward")->load();
-    float globalBrake = apvts.getRawParameterValue("globalBrake")->load();
-    float globalStrength = apvts.getRawParameterValue("globalStrength")->load();
+    heldPitches = midiProcessor.getheldPitches();
 
-    float noteScale = apvts.getRawParameterValue("noteScale")->load();
-    
-    float velocityScale = apvts.getRawParameterValue("velocityScale")->load();
-    float controlScale = apvts.getRawParameterValue("controlScale")->load();
+    midiProcessor.setOverlap(0);
 
-    float overlap = apvts.getRawParameterValue("overlap")->load();
-    midiProcessor.setOverlap(overlap);
-
-    for(int sample = 0; sample < buffer.getNumSamples(); ++sample){
-        heldPitches = midiProcessor.getheldPitches();
-        
-        for(int index = 0; index < 3; index++)
-        {
-            juce::String stateID = "state" + juce::String(index);
-            juce::String rateFreeID = "rateFree" + juce::String(index);
-            juce::String rateSyncID = "rateSync" + juce::String(index);
-            juce::String divisionID = "division" + juce::String(index);
-            juce::String phaseID = "phase" + juce::String(index);
-            juce::String opacityID = "opacity" + juce::String(index);
-
-            float state = apvts.getRawParameterValue(stateID)->load();
-            float rateFree = apvts.getRawParameterValue(rateFreeID)->load();
-            float rateSync = apvts.getRawParameterValue(rateSyncID)->load();
-            float division = apvts.getRawParameterValue(divisionID)->load();
-            float opacity = apvts.getRawParameterValue(opacityID)->load();
-            float phase = apvts.getRawParameterValue(phaseID)->load();
-            
-            rotation[index].setRate(index, rateFree, 0, phase);
-            rotation[index].nudge(globalStrength,
-                                  globalNudgeForward,
-                                  globalNudgeBackward,
-                                  globalBrake); // eventually only "global nudges
-            rotation[index].accumulate();
-            phases[index] = rotation[index].getPhase();
-
-            midiProcessor.setScaling(noteScale, velocityScale, controlScale, 0.0f);
-            midiProcessor.setSpinnerValues(index, state, rotation[index].getPhase(), division, opacity);
+    for (int i = 0; i < 3; i++){
+        for(int sample = 0; sample < buffer.getNumSamples(); ++sample){
+            rotation[i].accumulate();
         }
         
-        // midi output processing
-        midiProcessor.setNumThresholds(heldPitches);
-        midiProcessor.processThreshold();
-        midiProcessor.processAngles();
-        midiProcessor.processInteraction();
+        rotation[i].setRate(rateSync[i], rateFree[i], rateMode[i], phase[i]);
+        midiProcessor.setSpinnerValues(i,
+                                       state[i],
+                                       rotation[i].getPhase(), // real time rotation
+                                       division[i],
+                                       opacity[i]);
         
-
-        
-        phasesAtomic.store(phases);
-        heldPitchesAtomic.store(heldPitches);
-
+        phases[i] = rotation[i].getPhase(); // for atomic
     }
+    
+    midiProcessor.processInteraction();
     midiProcessor.notePlayback(midiMessages);
 
+    phasesAtomic.store(phases);
+    heldPitchesAtomic.store(heldPitches);
+
 }
+
+
 
 //==============================================================================
 bool TingeAudioProcessor::hasEditor() const
@@ -287,13 +260,6 @@ TingeAudioProcessor::createParameterLayout()
                                                                rateFreeName,
                                                                juce::NormalisableRange<float> { -5.0f, 5.0f, 0.01 }, 0.0f));
         
-        juce::String opacityID = "opacity" + juce::String(rotation);
-        juce::String opacityName = "Opacity " + juce::String(rotation);
-        
-        layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { opacityID, 1},
-                                                               rateFreeName,
-                                                               juce::NormalisableRange<float> { 0.0, 1.0f, 0.01 }, 0.0f));
-
         juce::String rateSyncID = "rateSync" + juce::String(rotation);
         juce::String rateSyncName = "Rate Sync " + juce::String(rotation);
 
@@ -310,7 +276,15 @@ TingeAudioProcessor::createParameterLayout()
             "Half Triplet", "Quarter", "8th Dotted", "Quarter Triplet",
             "8th", "16th Dotted", "8th Triplet", "16th", "16th Triplet", "32nd", "32nd Triplet"
         }, 22));
+        
+        juce::String rateModeID = "rateMode" + juce::String(rotation);
+        juce::String rateModeName = "Rate Mode " + juce::String(rotation);
+        
+        layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID { rateModeID, 1},
+                                                              rateModeName,
+                                                               true));
 
+        
         juce::String divisionID = "division" + juce::String(rotation);
         juce::String DivisionName = "Division " + juce::String(rotation);
 
@@ -324,6 +298,13 @@ TingeAudioProcessor::createParameterLayout()
         layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { phaseID, 1},
                                                                phaseName,
                                                                juce::NormalisableRange<float> { 0.0f, 100.0f, 0.01 }, 0.0f));
+
+        juce::String opacityID = "opacity" + juce::String(rotation);
+        juce::String opacityName = "Opacity " + juce::String(rotation);
+        
+        layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { opacityID, 1},
+                                                               rateFreeName,
+                                                               juce::NormalisableRange<float> { 0.0, 1.0f, 0.01 }, 0.0f));
 
         juce::String nudgeStrengthID = "nudgeSrength" + juce::String(rotation);
         juce::String nudgeStrengthName = "Nudge Strength" + juce::String(rotation);

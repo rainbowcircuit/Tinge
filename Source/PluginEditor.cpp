@@ -41,29 +41,23 @@ TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, st
     
     
     
-    addAndMakeVisible(noteScaleSlider);
-    noteScaleSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    noteScaleSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 40, 20);
-    noteScaleAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, "noteScale", noteScaleSlider);
-
-    
-    addAndMakeVisible(velocityScaleSlider);
-    velocityScaleSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    velocityScaleSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 40, 20);
-    velocityScaleAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, "velocityScale", velocityScaleSlider);
-
-
-    addAndMakeVisible(controlScaleSlider);
-    controlScaleSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    controlScaleSlider.setTextBoxStyle(juce::Slider::TextBoxBelow, false, 40, 20);
-    controlScaleAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, "controlScale", controlScaleSlider);
     
     addAndMakeVisible(overlapSlider);
     overlapSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     overlapSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 40, 20);
     overlapSlider.setLookAndFeel(&overlapLAF);
-    controlScaleAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, "overlap", overlapSlider);
+    overlapAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, "overlap", overlapSlider);
+    
 
+    addAndMakeVisible(hueSlider);
+    hueSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    hueSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 40, 20);
+    hueSlider.setRange(0.0, 100.0);
+
+    addAndMakeVisible(offsetSlider);
+    offsetSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+    offsetSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 40, 20);
+    offsetSlider.setRange(0.0, 100.0);
 
 }
 
@@ -105,17 +99,25 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
     //controlScaleSlider.setBounds(10, 80, 80, 60);
     
     
-    overlapSlider.setBounds(5, 5, 80, 80);
+ //   overlapSlider.setBounds(5, 5, 80, 80);
 
 }
 
 void TingeAudioProcessorEditor::resized()
 {
+    hueSlider.setBounds(5, 5, 80, 80);
+    offsetSlider.setBounds(5, 90, 80, 80);
+    
 }
+
 
 void TingeAudioProcessorEditor::timerCallback()
 {
+    auto hue = hueSlider.getValue();
+    auto offset = offsetSlider.getValue();
 
+    spinnerGraphics.setColors(hue, offset);
+    
     
     phases = phasesAtomic.load();
 
@@ -125,9 +127,9 @@ void TingeAudioProcessorEditor::timerCallback()
         juce::String divisionID = "division" + juce::String(index);
         juce::String opacityID = "opacity" + juce::String(index);
 
-        int state = audioProcessor.apvts.getRawParameterValue(stateID)->load();
-        int division = audioProcessor.apvts.getRawParameterValue(divisionID)->load();
-        int opacity = audioProcessor.apvts.getRawParameterValue(opacityID)->load();
+        float state = audioProcessor.apvts.getRawParameterValue(stateID)->load();
+        float division = audioProcessor.apvts.getRawParameterValue(divisionID)->load();
+        float opacity = audioProcessor.apvts.getRawParameterValue(opacityID)->load();
     
     spinnerGraphics.setParams(index, phases[index], division, state, opacity);
     }

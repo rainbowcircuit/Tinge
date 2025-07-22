@@ -15,6 +15,9 @@ public:
     void drawDoubleOverlap(juce::Graphics& g, juce::Path& pathA, juce::Path& pathB, juce::Colour color)
     {
         g.saveState();
+        juce::AffineTransform yOffset = juce::AffineTransform::translation(0.0f, -7.0f);
+        pathA.applyTransform(yOffset);
+        pathB.applyTransform(yOffset);
         g.reduceClipRegion(pathA);
         g.reduceClipRegion(pathB);
         g.setColour(color);
@@ -25,15 +28,18 @@ public:
     void drawTripleOverlap(juce::Graphics& g, juce::Path& pathA, juce::Path& pathB, juce::Path& pathC, juce::Colour color)
     {
         g.saveState();
+        juce::AffineTransform yOffset = juce::AffineTransform::translation(0.0f, -14.0f);
+        pathA.applyTransform(yOffset);
+        pathB.applyTransform(yOffset);
+        pathC.applyTransform(yOffset);
         g.reduceClipRegion(pathA);
         g.reduceClipRegion(pathB);
         g.reduceClipRegion(pathC);
+
         g.setColour(color);
         g.fillAll();
         g.restoreState();
     }
-
-    
 };
 
 
@@ -122,8 +128,13 @@ class SpinnerGraphics : public juce::Component, public Interaction, public DrawH
 public:
     SpinnerGraphics()
     {
+        p.setColors(30, 5, rotationValue[0].opacity, rotationValue[1].opacity, rotationValue[2].opacity);
     }
     
+    void setColors(float hue, float offset){
+        p.setColors(hue, offset, rotationValue[0].opacity, rotationValue[1].opacity, rotationValue[2].opacity);
+    }
+                   
     void paint(juce::Graphics& g) override
     {
         setWheelPosition();
@@ -133,22 +144,22 @@ public:
         auto B = generateWheelPath(g, 1, false);
         auto C = generateWheelPath(g, 0, false);
 
-        drawWithoutOverlap(g, A, Colors::graphicRed);
-        drawWithoutOverlap(g, B, Colors::graphicGreen);
-        drawWithoutOverlap(g, C, Colors::graphicBlue);
+        drawWithoutOverlap(g, A, p.colorA);
+        drawWithoutOverlap(g, B, p.colorB);
+        drawWithoutOverlap(g, C, p.colorC);
 
         // summed wheel
         auto sumA = generateWheelPath(g, 2, true);
         auto sumB = generateWheelPath(g, 1, true);
         auto sumC = generateWheelPath(g, 0, true);
 
-        drawWithoutOverlap(g, sumC, colorC);
-        drawWithoutOverlap(g, sumB, colorB);
-        drawWithoutOverlap(g, sumA, colorA);
-        drawDoubleOverlap(g, sumA, sumB, colorAB);
-        drawDoubleOverlap(g, sumB, sumC, colorBC);
-        drawDoubleOverlap(g, sumA, sumC, colorAC);
-        drawTripleOverlap(g, sumA, sumB, sumC, colorABC);
+        drawWithoutOverlap(g, sumC, p.colorC);
+        drawWithoutOverlap(g, sumB, p.colorB);
+        drawWithoutOverlap(g, sumA, p.colorA);
+        drawDoubleOverlap(g, sumA, sumB, p.colorAB);
+        drawDoubleOverlap(g, sumB, sumC, p.colorBC);
+        drawDoubleOverlap(g, sumA, sumC, p.colorAC);
+        drawTripleOverlap(g, sumA, sumB, sumC, p.colorABC);
         
         
         // remove this later
@@ -160,7 +171,7 @@ public:
         float sumYScale = animationValue * bounds.getHeight() * 0.25f;
         float sumYOffset = (1.0f - animationValue) * bounds.getHeight() * 0.45f;
 
-        drawThreshold(g, x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
+    //    drawThreshold(g, x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
     }
     
     void setOverlapIndex(int overlapIndex)
@@ -172,9 +183,9 @@ public:
     void setOverlapColours()
     {
         if (overlapIndex == 0 || overlapIndex == 3 || overlapIndex == 4 || overlapIndex == 6){
-            colorA = Colors::graphicRed;
-            colorB = Colors::graphicGreen;
-            colorC = Colors::graphicBlue;
+            colorA = p.colorA;
+            colorB = p.colorB;
+            colorC = p.colorC;
         } else {
             colorA = Colors::backgroundFill;
             colorB = Colors::backgroundFill;
@@ -182,9 +193,9 @@ public:
         }
         
         if (overlapIndex == 1 || overlapIndex == 3 || overlapIndex == 5 || overlapIndex == 6){
-            colorAB = Colors::graphicYellow;
-            colorBC = Colors::graphicCyan;
-            colorAC = Colors::graphicMagenta;
+            colorAB = p.colorAB;
+            colorBC = p.colorBC;
+            colorAC = p.colorAC;
         } else {
             colorAB = Colors::backgroundFill;
             colorBC = Colors::backgroundFill;
@@ -192,7 +203,7 @@ public:
         }
         
         if (overlapIndex == 2 || overlapIndex == 4 || overlapIndex == 5 || overlapIndex == 6){
-            colorABC = Colors::graphicWhite;
+            colorABC = p.colorABC;
         } else {
             colorABC = Colors::backgroundFill;
         }
@@ -211,7 +222,7 @@ public:
         for (int i = 0; i < numThresholds; i++)
         {
             float angleOffset = fmodf(thresholdAngles[i] - pi - 0.1, 1.0f);
-            if (numThresholds > 0){
+            if (numThresholds != 0){
                 
                 float cos = std::cos(angleOffset * twopi);
                 float sin = std::sin(angleOffset * twopi);
@@ -333,6 +344,7 @@ private:
     float animationValue;
     float isometricSkew;
     float yOffset, yPosOffset;
+    Palette p;
 };
 
 

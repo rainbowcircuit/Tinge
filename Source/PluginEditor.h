@@ -74,14 +74,14 @@ private:
     std::atomic<std::array<float, 16>>& noteValuesAtomic;
 
     DialGraphics overlapLAF { 3 };
-    juce::Slider noteScaleSlider, velocityScaleSlider, controlScaleSlider, overlapSlider;
+    juce::Slider overlapSlider, hueSlider, offsetSlider;
+    
+    
+    
     
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
-    noteScaleAttachment, velocityScaleAttachment, controlScaleAttachment, overlapAttachment;
+    overlapAttachment;
     
-    juce::TextButton state1Button, state2Button, state3Button;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>
-    state1Attachment, state2Attachment, state3Attachment;
 
     
     SpinnerGraphics spinnerGraphics;

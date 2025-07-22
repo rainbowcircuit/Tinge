@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="HhOoZn" name="Tinge" projectType="audioplug" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginCharacteristicsValue="pluginIsMidiEffectPlugin,pluginProducesMidiOut,pluginWantsMidiIn"
+              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginCharacteristicsValue="pluginIsSynth,pluginProducesMidiOut,pluginWantsMidiIn"
               companyName="Rainbow Circuit" companyWebsite="www.rainbowcircuit.co"
               companyEmail="hey@rainbowcircuit.co" userNotes="New ways around MIDI with Daedelus."
               pluginFormats="buildAU,buildStandalone,buildVST3">
