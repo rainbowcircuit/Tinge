@@ -15,9 +15,9 @@ public:
     void drawDoubleOverlap(juce::Graphics& g, juce::Path& pathA, juce::Path& pathB, juce::Colour color)
     {
         g.saveState();
-        juce::AffineTransform yOffset = juce::AffineTransform::translation(0.0f, -7.0f);
-        pathA.applyTransform(yOffset);
-        pathB.applyTransform(yOffset);
+    //    juce::AffineTransform yOffset = juce::AffineTransform::translation(0.0f, -7.0f);
+    //    pathA.applyTransform(yOffset);
+     //   pathB.applyTransform(yOffset);
         g.reduceClipRegion(pathA);
         g.reduceClipRegion(pathB);
         g.setColour(color);
@@ -28,10 +28,10 @@ public:
     void drawTripleOverlap(juce::Graphics& g, juce::Path& pathA, juce::Path& pathB, juce::Path& pathC, juce::Colour color)
     {
         g.saveState();
-        juce::AffineTransform yOffset = juce::AffineTransform::translation(0.0f, -14.0f);
-        pathA.applyTransform(yOffset);
-        pathB.applyTransform(yOffset);
-        pathC.applyTransform(yOffset);
+    //    juce::AffineTransform yOffset = juce::AffineTransform::translation(0.0f, -14.0f);
+    //    pathA.applyTransform(yOffset);
+    //    pathB.applyTransform(yOffset);
+    //    pathC.applyTransform(yOffset);
         g.reduceClipRegion(pathA);
         g.reduceClipRegion(pathB);
         g.reduceClipRegion(pathC);
@@ -41,8 +41,6 @@ public:
         g.restoreState();
     }
 };
-
-
 
 class WheelGraphics : public juce::Component, public Interaction
 {
@@ -86,7 +84,7 @@ public:
                                         radius, radius/(isometricSkew),
                                         0.0f, startAngle, endAngle);
                 wheelPath.closeSubPath();
-                wheelPath = wheelPath.createPathWithRoundedCorners(4);
+                wheelPath = wheelPath.createPathWithRoundedCorners(1);
             }
         }
         return wheelPath;
@@ -128,38 +126,38 @@ class SpinnerGraphics : public juce::Component, public Interaction, public DrawH
 public:
     SpinnerGraphics()
     {
-        p.setColors(30, 5, rotationValue[0].opacity, rotationValue[1].opacity, rotationValue[2].opacity);
+        
+        hoverYOffsetSmooth[0].reset(10);
+        hoverYOffsetSmooth[1].reset(10);
+        hoverYOffsetSmooth[2].reset(10);
     }
     
-    void setColors(float hue, float offset){
-        p.setColors(hue, offset, rotationValue[0].opacity, rotationValue[1].opacity, rotationValue[2].opacity);
+    void setColors(){
+        p.setColors(rotationValue[0].colorIndex,
+                    rotationValue[1].colorIndex,
+                    rotationValue[2].colorIndex,
+                    rotationValue[0].opacity,
+                    rotationValue[1].opacity,
+                    rotationValue[2].opacity);
     }
                    
     void paint(juce::Graphics& g) override
     {
         setWheelPosition();
 
-        // single wheel
-        auto A = generateWheelPath(g, 2, false);
-        auto B = generateWheelPath(g, 1, false);
-        auto C = generateWheelPath(g, 0, false);
-
-        drawWithoutOverlap(g, A, p.colorA);
-        drawWithoutOverlap(g, B, p.colorB);
-        drawWithoutOverlap(g, C, p.colorC);
 
         // summed wheel
         auto sumA = generateWheelPath(g, 2, true);
         auto sumB = generateWheelPath(g, 1, true);
         auto sumC = generateWheelPath(g, 0, true);
 
-        drawWithoutOverlap(g, sumC, p.colorC);
-        drawWithoutOverlap(g, sumB, p.colorB);
-        drawWithoutOverlap(g, sumA, p.colorA);
-        drawDoubleOverlap(g, sumA, sumB, p.colorAB);
-        drawDoubleOverlap(g, sumB, sumC, p.colorBC);
-        drawDoubleOverlap(g, sumA, sumC, p.colorAC);
-        drawTripleOverlap(g, sumA, sumB, sumC, p.colorABC);
+        drawWithoutOverlap(g, sumC, colorC);
+        drawWithoutOverlap(g, sumB, colorB);
+        drawWithoutOverlap(g, sumA, colorA);
+        drawDoubleOverlap(g, sumA, sumB, colorAB);
+        drawDoubleOverlap(g, sumB, sumC, colorBC);
+        drawDoubleOverlap(g, sumA, sumC, colorAC);
+        drawTripleOverlap(g, sumA, sumB, sumC, colorABC);
         
         
         // remove this later
@@ -172,6 +170,16 @@ public:
         float sumYOffset = (1.0f - animationValue) * bounds.getHeight() * 0.45f;
 
     //    drawThreshold(g, x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
+        
+        
+        // single wheel
+        auto C = generateWheelPath(g, 2, false);
+        auto B = generateWheelPath(g, 1, false);
+        auto A = generateWheelPath(g, 0, false);
+
+        drawWithoutOverlap(g, A, p.colorA);
+        drawWithoutOverlap(g, B, p.colorB);
+        drawWithoutOverlap(g, C, p.colorC);
     }
     
     void setOverlapIndex(int overlapIndex)
@@ -258,17 +266,54 @@ public:
         isometricSkew = (1.0f - animationValue) + 1.0f;
     }
     
-    void resized() override {}
-    
-    void setParams(int index, float phaseValue, int divisionValue, bool stateValue, float opacityValue)
+    void resized() override
     {
-        rotationValue[index].phase = phaseValue;
+        setWheelPosition();
+    }
+    
+    void setParams(int index, int divisionValue, bool stateValue, int colorIndexValue, float opacityValue)
+    {
         rotationValue[index].division = divisionValue;
         rotationValue[index].state = stateValue;
+        rotationValue[index].colorIndex = colorIndexValue;
         rotationValue[index].opacity = opacityValue;
-
+        setColors();
         repaint();
     }
+    
+    void setPhase(int index, float phaseValue)
+    {
+        rotationValue[index].phase = phaseValue;
+        repaint();
+    }
+    
+    void setHover(int hoverIndex)
+    {
+        this->hoverIndex = hoverIndex;
+        auto height = getLocalBounds().toFloat().getHeight();
+        
+        if (hoverIndex == 0) { // top selected
+            hoverYOffsetSmooth[0].setTargetValue(height * 0.1f);
+            hoverYOffsetSmooth[1].setTargetValue(height * 0.3f);
+            hoverYOffsetSmooth[2].setTargetValue(height * 0.4f);
+
+        } else if (hoverIndex == 1) { // middle selected
+            hoverYOffsetSmooth[0].setTargetValue(height * 0.0f);
+            hoverYOffsetSmooth[1].setTargetValue(height * 0.2f);
+            hoverYOffsetSmooth[2].setTargetValue(height * 0.4f);
+
+        } else if (hoverIndex == 2) {
+            hoverYOffsetSmooth[0].setTargetValue(height * 0.0f);
+            hoverYOffsetSmooth[1].setTargetValue(height * 0.1f);
+            hoverYOffsetSmooth[2].setTargetValue(height * 0.3f);
+            
+        } else { // no hover
+            hoverYOffsetSmooth[0].setTargetValue(height * 0.1f);
+            hoverYOffsetSmooth[1].setTargetValue(height * 0.2f);
+            hoverYOffsetSmooth[2].setTargetValue(height * 0.3f);
+        }
+    }
+    
     
     void setAnimationValue(float animationValue)
     {
@@ -285,9 +330,11 @@ public:
         
         float yOffset = animationValue * bounds.getHeight() * 2.0f;
         
-        rotationValue[0].bounds.setBounds(x + wheelMargin, y + 30 - yOffset, wheelWidth, wheelWidth);
-        rotationValue[1].bounds.setBounds(x + wheelMargin, y + 60 - yOffset, wheelWidth, wheelWidth);
-        rotationValue[2].bounds.setBounds(x + wheelMargin, y + 90 - yOffset, wheelWidth, wheelWidth);
+        rotationValue[0].bounds.setBounds(x + wheelMargin, y + hoverYOffsetSmooth[0].getNextValue() - yOffset,
+                                          
+                                          wheelWidth, wheelWidth);
+        rotationValue[1].bounds.setBounds(x + wheelMargin, y + hoverYOffsetSmooth[1].getNextValue() - yOffset, wheelWidth, wheelWidth);
+        rotationValue[2].bounds.setBounds(x + wheelMargin, y + hoverYOffsetSmooth[2].getNextValue() - yOffset, wheelWidth, wheelWidth);
 
         float sumYScale = animationValue * bounds.getHeight() * 0.25f;
         float sumYOffset = (1.0f - animationValue) * bounds.getHeight() * 0.45f;
@@ -305,9 +352,7 @@ public:
         float y = isSum ? rotationValue[index].sumBounds.getY() : rotationValue[index].bounds.getY();
         float width = isSum ? rotationValue[index].sumBounds.getWidth() : rotationValue[index].bounds.getWidth();
         float height = isSum ? rotationValue[index].sumBounds.getHeight() : rotationValue[index].bounds.getHeight();
-        
-        
-        
+                
         int division = rotationValue[index].division;
         if (division < 0) { division = 1; }
         
@@ -339,6 +384,9 @@ public:
 
 private:
     juce::Colour colorA, colorB, colorC, colorAB, colorBC, colorAC, colorABC;
+    int hoverIndex = -1; //
+    std::array<float, 3> hoverYOffset;
+    std::array<juce::SmoothedValue<float>, 3> hoverYOffsetSmooth;
     
     int overlapIndex;
     float animationValue;

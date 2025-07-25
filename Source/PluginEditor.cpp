@@ -32,15 +32,11 @@ TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, st
     addAndMakeVisible(*valueAssignmentLayout);
 
     
-    setSize (450, 450);
+    setSize (650, 450);
     startTimer(30);
     
     updater.addAnimator(isoEnterToggle);
     updater.addAnimator(isoExitToggle);
-    
-    
-    
-    
     
     addAndMakeVisible(overlapSlider);
     overlapSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -52,24 +48,34 @@ TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, st
     addAndMakeVisible(hueSlider);
     hueSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     hueSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 40, 20);
-    hueSlider.setRange(0.0, 100.0);
+    hueSlider.setRange(-1.0, 2.0f);
 
     addAndMakeVisible(offsetSlider);
     offsetSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     offsetSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 40, 20);
     offsetSlider.setRange(0.0, 100.0);
 
+    initializeParameter();
+    const auto params = audioProcessor.getParameters();
+    for (auto param : params){
+        param->addListener(this);
+    }
 }
 
 TingeAudioProcessorEditor::~TingeAudioProcessorEditor()
 {
+    const auto params = audioProcessor.
+    getParameters();
+    for (auto param : params){
+        param->removeListener(this);
+    }
 }
 
 //==============================================================================
 void TingeAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll(Colors::backgroundFill);
+    g.fillAll(juce::Colour(180, 180, 180));
 
     auto bounds = getLocalBounds().toFloat();
     float x = bounds.getX();
@@ -80,18 +86,35 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
     juce::Path controlFill;
     float xCoords = animationValue * 225 + 225;
     controlFill.addRectangle(xCoords, 0, 225, 450);
-    g.setColour(Colors::backgroundFillAlt);
-    g.fillPath(controlFill);
+    g.setColour(juce::Colour(200, 200, 200));
     
-    rotationLayout1->setBounds(xCoords, 0, width * 0.5f, height * 0.25f);
-    rotationLayout2->setBounds(xCoords, height * 0.275f, width * 0.5f, height * 0.25f);
-    rotationLayout3->setBounds(xCoords, height * 0.55f, width * 0.5f, height * 0.25f);
+    float controlWidth = width * 0.275f;
+    float controlMargin = width * 0.025f;
+    rotationLayout1->setBounds(x + (animationValue * controlWidth * 1.25f) + (width * 0.725f) - controlMargin,
+                               0,
+                               controlWidth,
+                               height * 0.35f);
     
-    valueAssignmentLayout->setBounds(xCoords, height * 0.8f, 225, height * 0.25f);
+    rotationLayout2->setBounds(x - (animationValue * controlWidth * 1.25f) + controlMargin,
+                               height * 0.25f,
+                               controlWidth,
+                               height * 0.35f);
     
-//    globalLayout->setBounds(0, 400, xCoords, 40);
+    rotationLayout3->setBounds(x + (animationValue * controlWidth * 1.25f) + (width * 0.725f) - controlMargin,
+                               height * 0.5f,
+                               controlWidth,
+                               height * 0.35f);
+    
     spinnerGraphics.setAnimation(animationValue);
-    spinnerGraphics.setBounds(0, 0, xCoords, 450);
+    spinnerGraphics.setBounds((width - ((animationValue * height * 0.35f) + (height * 0.65f))) * 0.5f,
+                              0,
+                              (animationValue * height * 0.35f) + (height * 0.65f),
+                              height);
+
+    
+  //  valueAssignmentLayout->setBounds(xCoords, height * 0.8f, 225, height * 0.25f);
+    
+    globalLayout->setBounds(0, 400, width, 50);
     
     
     //noteScaleSlider.setBounds(10, 10, 80, 60);
@@ -99,49 +122,102 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
     //controlScaleSlider.setBounds(10, 80, 80, 60);
     
     
- //   overlapSlider.setBounds(5, 5, 80, 80);
 
 }
 
 void TingeAudioProcessorEditor::resized()
 {
-    hueSlider.setBounds(5, 5, 80, 80);
-    offsetSlider.setBounds(5, 90, 80, 80);
+    overlapSlider.setBounds(5, 5, 80, 80);
+//    offsetSlider.setBounds(5, 90, 80, 80);
     
 }
 
 
 void TingeAudioProcessorEditor::timerCallback()
 {
-    auto hue = hueSlider.getValue();
-    auto offset = offsetSlider.getValue();
-
-    spinnerGraphics.setColors(hue, offset);
     
     
     phases = phasesAtomic.load();
 
     for (int index = 0; index < 3; index++)
     {
-        juce::String stateID = "state" + juce::String(index);
-        juce::String divisionID = "division" + juce::String(index);
-        juce::String opacityID = "opacity" + juce::String(index);
-
-        float state = audioProcessor.apvts.getRawParameterValue(stateID)->load();
-        float division = audioProcessor.apvts.getRawParameterValue(divisionID)->load();
-        float opacity = audioProcessor.apvts.getRawParameterValue(opacityID)->load();
-    
-    spinnerGraphics.setParams(index, phases[index], division, state, opacity);
+        spinnerGraphics.setPhase(index, phases[index]);
     }
     
-    int overlap = audioProcessor.apvts.getRawParameterValue("overlap")->load();
-
     spinnerGraphics.setOverlapIndex(overlap);
 
+    // maybe clean this up
+    auto mouse = getMouseXYRelative();
+    bool hover1 = rotationLayout1->isMouseOver(mouse);
+    bool hover2 = rotationLayout2->isMouseOver(mouse);
+    bool hover3 = rotationLayout3->isMouseOver(mouse);
+    
+    int hoverValue;
+    if (hover1) { hoverValue = 0; }
+    else if (hover2) { hoverValue = 1; }
+    else if (hover3) { hoverValue = 2; }
+    else { hoverValue = -1; }
+    spinnerGraphics.setHover(hoverValue);
+    
+    
+    
     
     std::array<float, 16> heldNotes = noteValuesAtomic.load();
     spinnerGraphics.setNumThresholds(heldNotes);
     spinnerGraphics.processThreshold();
     spinnerGraphics.processAngles();
-    
 }
+
+void TingeAudioProcessorEditor::parameterValueChanged (int parameterIndex, float newValue)
+{
+    juce::String newParameterID;
+    float scaledValue = 0.0f;
+
+    if (auto* param = dynamic_cast<juce::AudioProcessorParameterWithID*>(audioProcessor.getParameters()[parameterIndex]))
+    {
+        if (auto* rangedParam = dynamic_cast<juce::RangedAudioParameter*>(param))
+        {
+            scaledValue = rangedParam->convertFrom0to1(newValue);
+            newParameterID = param->paramID;
+        }
+    }
+
+    nudgeStrength = juce::String("nudgeStrength") == newParameterID ? scaledValue : nudgeStrength;
+
+    for (int index = 0 ; index < 3; index++){
+        auto incr = juce::String(index);
+        
+        division[index] = juce::String("division") + incr == newParameterID ? scaledValue : division[index];
+        state[index] = juce::String("state") + incr == newParameterID ? scaledValue : state[index];
+        colorIndex[index] = juce::String("colorIndex") + incr == newParameterID ? scaledValue : colorIndex[index];
+        opacity[index] = juce::String("opacity") + incr == newParameterID ? scaledValue : opacity[index];
+
+        spinnerGraphics.setParams(index, division[index], state[index], colorIndex[index], opacity[index]);
+    }
+    
+    globalLayout->setLPGStrength(nudgeStrength);
+    
+    overlap = juce::String("overlap") == newParameterID ? scaledValue : overlap;
+    spinnerGraphics.setOverlapIndex(overlap);
+    overlapLAF.setColor(colorIndex[0], colorIndex[1], colorIndex[2], opacity[0], opacity[1], opacity[2]);
+    overlapSlider.repaint();
+}
+
+void TingeAudioProcessorEditor::initializeParameter()
+{
+    nudgeStrength = audioProcessor.apvts.getRawParameterValue(juce::String("nudgeStrength"))->load();
+    globalLayout->setLPGStrength(nudgeStrength);
+
+    for (int index = 0 ; index < 3; index++){
+        auto incr = juce::String(index);
+        
+        division[index] = audioProcessor.apvts.getRawParameterValue(juce::String("division") + incr)->load();
+        state[index] = audioProcessor.apvts.getRawParameterValue(juce::String("state") + incr)->load();
+        opacity[index] = audioProcessor.apvts.getRawParameterValue(juce::String("opacity") + incr)->load();
+        colorIndex[index] = audioProcessor.apvts.getRawParameterValue(juce::String("colorIndex") + incr)->load();
+
+        spinnerGraphics.setParams(index, division[index], state[index], colorIndex[index], opacity[index]);
+    }
+
+}
+

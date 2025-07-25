@@ -17,7 +17,7 @@
 //==============================================================================
 /**
 */
-class TingeAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::Timer
+class TingeAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::Timer, juce::AudioProcessorParameter::Listener
 {
 public:
     TingeAudioProcessorEditor (TingeAudioProcessor&, std::atomic<std::array<float, 3>>& phases, std::atomic<std::array<float, 16>>& noteValues);
@@ -40,7 +40,14 @@ public:
             }
     }
     
+    void parameterValueChanged (int parameterIndex, float newValue) override;
+    void parameterGestureChanged (int parameterIndex, bool gestureIsStarting) override {}
+    void initializeParameter();
+    
 private:
+    float overlap, nudgeStrength;
+    std::array<float, 3> rateFree, rateSync, phase, division, colorIndex, opacity;
+    std::array<bool, 3> state, rateMode;
     
     bool isoView = false;
     float animationValue;
@@ -64,10 +71,6 @@ private:
         })
         .build();
 
-
-
-
-
     std::atomic<std::array<float, 3>>& phasesAtomic;
     std::array<float, 3> phases;
 
@@ -75,9 +78,6 @@ private:
 
     DialGraphics overlapLAF { 3 };
     juce::Slider overlapSlider, hueSlider, offsetSlider;
-    
-    
-    
     
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
     overlapAttachment;

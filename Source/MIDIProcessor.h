@@ -158,13 +158,12 @@ public:
     
 private:
     LowPassGate forwardLPG, backwardLPG, brakeLPG;
-    bool isForward = true;
     double sampleRate;
     float phase = 0.0f, previousPhase = 0.0f, phaseOffset = 0.0f;
     float bpm = 120.0f;
-    int rateBPM;
-    float rateFree;
-    bool isSynced;
+    int rateBPM = 0;
+    float rateFree = 0.0f;
+    bool rateMode = false;
         
     std::array <double, 45> subdivisionMultiplier =
     {

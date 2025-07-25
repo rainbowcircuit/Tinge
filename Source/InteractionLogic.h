@@ -158,7 +158,7 @@ public:
     {
         bool state = true;
         float phase = 0.0f;
-        float division;
+        float division = 1;
         std::array<float, 16> angles;
         std::array<float, 16> threshold;
         
@@ -168,8 +168,7 @@ public:
         bool inFocus;
         
         float opacity;
-        juce::Colour baseColor = { 255, 255, 255 };
-        juce::Colour hoverColor = { 255, 255, 255 };
+        int colorIndex;
         
         bool isMouseOver(const juce::MouseEvent& m)
         {

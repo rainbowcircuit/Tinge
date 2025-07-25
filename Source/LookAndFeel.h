@@ -12,26 +12,37 @@
 #include <JuceHeader.h>
 
 namespace Colors {
-    inline juce::Colour backgroundFill = { 32, 32, 32 };
+    inline juce::Colour backgroundFill = { 180, 180, 180 };
     inline juce::Colour backgroundFillAlt = { 42, 42, 42 };
+    inline juce::Colour graphicWhite = { 244, 244, 244 };
 
-    inline juce::Colour graphicRed = { 248, 72, 56 };
-    inline juce::Colour graphicBlue = { 2, 129, 217 };
-    inline juce::Colour graphicGreen = { 90, 219, 90 };
-    inline juce::Colour graphicYellow = { 247, 234, 79 };
-    inline juce::Colour graphicCyan = { 93, 214, 230 };
-    inline juce::Colour graphicMagenta = { 217, 75, 182 };;
-    inline juce::Colour graphicWhite = { 232, 242, 241 };
-    inline juce::Colour graphicWhiteAlt = { 222, 232, 231 };
-        
-    inline juce::Colour graphicHoverRed = { 255, 92, 76 };
-    inline juce::Colour graphicHoverBlue = { 22, 149, 237 };
-    inline juce::Colour graphicHoverGreen = { 110, 239, 110 };
-    inline juce::Colour graphicHoverYellow = { 255, 254, 99 };
-    inline juce::Colour graphicHoverCyan = { 113, 234, 250 };
-    inline juce::Colour graphicHoverMagenta = { 237, 95, 202 };;
+inline juce::Array<juce::Colour> gradientColor = {
+    juce::Colour::fromRGB(254, 242, 0),   // yellow
+    juce::Colour::fromRGB(202, 219, 44),  // chartreuse
+    juce::Colour::fromRGB(142, 198, 63),  // yellow-green
+    juce::Colour::fromRGB(60, 181, 74),   // spring green
+    juce::Colour::fromRGB(1, 167, 81),    // green
+    juce::Colour::fromRGB(1, 167, 116),   // blue-green
+    juce::Colour::fromRGB(5, 168, 157),   // aqua green
+    juce::Colour::fromRGB(5, 172, 198),   // aqua blue
+    juce::Colour::fromRGB(1, 173, 238),   // turquoise blue
+    juce::Colour::fromRGB(3, 141, 212),   // cerulean blue
+    juce::Colour::fromRGB(0, 114, 187),   // blue
+    juce::Colour::fromRGB(0, 84, 164),    // blue violet
+    juce::Colour::fromRGB(47, 48, 148),   // violet
+    juce::Colour::fromRGB(102, 46, 146),  // red violet
+    juce::Colour::fromRGB(146, 40, 143),  // purple
+    juce::Colour::fromRGB(188, 27, 141),  // fuchsia
+    juce::Colour::fromRGB(238, 0, 141),   // magenta
+    juce::Colour::fromRGB(235, 10, 115),  // blue red
+    juce::Colour::fromRGB(238, 18, 92),   // red
+    juce::Colour::fromRGB(239, 23, 65),   // orange red
+    juce::Colour::fromRGB(236, 29, 37),   // orange
+    juce::Colour::fromRGB(242, 101, 34),  // yellow orange
+    juce::Colour::fromRGB(247, 148, 31),  // orange yellow
+    juce::Colour::fromRGB(254, 194, 18)   // golden yellow
+};
 
-    
     
     //
 };
@@ -60,11 +71,19 @@ struct Palette
         return juce::Colour::fromHSV(hue, 1.0f, 1.0f, 1.0f);
     }
     
-    void setColors(float baseHue, float hueOffset, float alpha0, float alpha1, float alpha2)
+    void setColors(int colorAIndex, int colorBIndex, int colorCIndex, float alphaA, float alphaB, float alphaC)
     {
-        colorA = getColorFromHue(baseHue).withAlpha((float)alpha0);
-        colorB = getColorFromHue(baseHue + hueOffset).withAlpha((float)alpha1);
-        colorC = getColorFromHue(baseHue - hueOffset).withAlpha((float)alpha2);
+        colorAIndex = juce::jlimit(0, 23, colorAIndex);
+        colorBIndex = juce::jlimit(0, 23, colorBIndex);
+        colorCIndex = juce::jlimit(0, 23, colorCIndex);
+
+        alphaA = juce::jlimit(0.0f, 1.0f, alphaA);
+        alphaB = juce::jlimit(0.0f, 1.0f, alphaB);
+        alphaC = juce::jlimit(0.0f, 1.0f, alphaC);
+
+        colorA = Colors::gradientColor[colorAIndex].withAlpha((float)alphaA/3);
+        colorB = Colors::gradientColor[colorBIndex].withAlpha((float)alphaB/3);
+        colorC = Colors::gradientColor[colorCIndex].withAlpha((float)alphaC/3);
         colorAB = addColors(colorA, colorB);
         colorBC = addColors(colorB, colorC);
         colorAC = addColors(colorA, colorC);

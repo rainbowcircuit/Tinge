@@ -74,42 +74,48 @@ public:
             }
         }
         
+        nudgeStrength = juce::String("nudgeStrength") == newParameterID ? scaledValue : nudgeStrength;
+        nudgeForward = juce::String("nudgeForward") == newParameterID ? scaledValue :nudgeForward;
+        nudgeBackward = juce::String("nudgeBackward") == newParameterID ? scaledValue : nudgeBackward;
+        brake = juce::String("brake") == newParameterID ? scaledValue : brake;
+        overlap = juce::String("overlap") == newParameterID ? scaledValue : overlap;
+
+        
         for (int i = 0 ; i < 3; i++){
             auto incr = juce::String(i);
+            
             state[i] = juce::String("state") + incr == newParameterID ? scaledValue : state[i];
             rateFree[i] = juce::String("rateFree") + incr == newParameterID ? scaledValue : rateFree[i];
             rateSync[i] = juce::String("rateSync") + incr == newParameterID ? scaledValue : rateSync[i];
             rateMode[i] = juce::String("rateMode") + incr == newParameterID ? scaledValue : rateMode[i];
             phase[i] = juce::String("phase") + incr == newParameterID ? scaledValue : phase[i];
             division[i] = juce::String("division") + incr == newParameterID ? scaledValue : division[i];
-            
-
         }
-
-
     }
     
     void parameterGestureChanged (int parameterIndex, bool gestureIsStarting) override {}
 
     void initializeParameters()
     {
-        float globalNudgeForward = apvts.getRawParameterValue("globalNudgeForward")->load();
-        float globalNudgeBackward = apvts.getRawParameterValue("globalNudgeBackward")->load();
-        float globalBrake = apvts.getRawParameterValue("globalBrake")->load();
-        float globalStrength = apvts.getRawParameterValue("globalStrength")->load();
+        nudgeStrength = apvts.getRawParameterValue("nudgeStrength")->load();
+        nudgeForward = apvts.getRawParameterValue("nudgeForward")->load();
+        nudgeBackward = apvts.getRawParameterValue("nudgeBackward")->load();
+        brake = apvts.getRawParameterValue("brake")->load();
+        overlap = apvts.getRawParameterValue("overlap")->load();
 
         float noteScale = apvts.getRawParameterValue("noteScale")->load();
         
         float velocityScale = apvts.getRawParameterValue("velocityScale")->load();
         float controlScale = apvts.getRawParameterValue("controlScale")->load();
 
-        float overlap = apvts.getRawParameterValue("overlap")->load();
-
+        
             for(int index = 0; index < 3; index++)
             {
                 juce::String stateID = "state" + juce::String(index);
                 juce::String rateFreeID = "rateFree" + juce::String(index);
                 juce::String rateSyncID = "rateSync" + juce::String(index);
+                juce::String rateModeID = "rateMode" + juce::String(index);
+
                 juce::String divisionID = "division" + juce::String(index);
                 juce::String phaseID = "phase" + juce::String(index);
                 juce::String opacityID = "opacity" + juce::String(index);
@@ -117,15 +123,23 @@ public:
                 float state = apvts.getRawParameterValue(stateID)->load();
                 float rateFree = apvts.getRawParameterValue(rateFreeID)->load();
                 float rateSync = apvts.getRawParameterValue(rateSyncID)->load();
+                float rateMode = apvts.getRawParameterValue(rateModeID)->load();
+
                 float division = apvts.getRawParameterValue(divisionID)->load();
                 float opacity = apvts.getRawParameterValue(opacityID)->load();
                 float phase = apvts.getRawParameterValue(phaseID)->load();
+                
+                rotation[index].nudge(nudgeStrength, nudgeForward, nudgeBackward, brake);
+                rotation[index].setRate(rateSync, rateFree, rateMode, phase);
+                rotation[index].setDivision(division);
                 
             }
 
     }
     
 private:
+    float nudgeStrength, nudgeForward, nudgeBackward, brake;
+    int overlap;
     std::array<float, 3> rateFree, rateSync, phase, division, opacity;
     std::array<bool, 3> state, rateMode;
     

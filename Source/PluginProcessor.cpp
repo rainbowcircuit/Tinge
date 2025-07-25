@@ -92,11 +92,12 @@ void TingeAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
         rotation[index].setSampleRate(sampleRate);
     }
     midiProcessor.prepareToPlay(sampleRate);
-    
     const auto params = this->getParameters();
     for (auto param : params){
         param->addListener(this);
     }
+    
+    initializeParameters();
 }
 
 void TingeAudioProcessor::releaseResources()
@@ -141,14 +142,17 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     midiProcessor.holdPitches(midiMessages);
     heldPitches = midiProcessor.getheldPitches();
 
-    midiProcessor.setOverlap(0);
+    midiProcessor.setOverlap(overlap);
 
     for (int i = 0; i < 3; i++){
+        rotation[i].tempo(getPlayHead());
+        rotation[i].setRate(rateSync[i], rateFree[i], rateMode[i], phase[i]);
+        rotation[i].nudge(nudgeStrength, nudgeForward, nudgeBackward, brake);
+
         for(int sample = 0; sample < buffer.getNumSamples(); ++sample){
             rotation[i].accumulate();
         }
         
-        rotation[i].setRate(rateSync[i], rateFree[i], rateMode[i], phase[i]);
         midiProcessor.setSpinnerValues(i,
                                        state[i],
                                        rotation[i].getPhase(), // real time rotation
@@ -157,7 +161,6 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
         
         phases[i] = rotation[i].getPhase(); // for atomic
     }
-    
     midiProcessor.processInteraction();
     midiProcessor.notePlayback(midiMessages);
 
@@ -165,8 +168,6 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     heldPitchesAtomic.store(heldPitches);
 
 }
-
-
 
 //==============================================================================
 bool TingeAudioProcessor::hasEditor() const
@@ -201,21 +202,21 @@ TingeAudioProcessor::createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
-    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalNudgeForward", 1},
-                                                         "Global Nudge Forward",
+    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "nudgeForward", 1},
+                                                         "Nudge Forward",
                                                          0, 1, 0));
 
-    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalNudgeBackward", 1},
-                                                     "Global Nudge Backward",
+    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "nudgeBackward", 1},
+                                                     "Nudge Backward",
                                                      0, 1, 0));
 
-    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalBrake", 1},
-                                                 "Global Brake",
+    layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "brake", 1},
+                                                 "Brake",
                                                  0, 1, 0));
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "globalStrength", 1},
-                                                           "Global Strength",
-                                                           juce::NormalisableRange<float> { 0.0f, 100.0f, 0.1 }, 0.0f));
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "nudgeStrength", 1},
+                                                           "Nudge Strength",
+                                                           juce::NormalisableRange<float> { 0.0f, 100.0f, 0.1 }, 100.0f));
 
     layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "globalReset", 1},
                                                  "Global Reset",
@@ -244,6 +245,11 @@ TingeAudioProcessor::createParameterLayout()
                                                         "Reset Mode",
                                                         juce::StringArray { "No Reset", "External Reset", "Reset on Note Clear", "Reset On Note On" }, 0));
     
+    
+    
+    std::array<float, 3> phaseDefaults = { 0.0f, 33.0f, 66.0f };
+    std::array<int, 3> colorIndexDefaults = { 0, 7, 15 };
+
     for(int rotation = 0; rotation < 3; rotation++)
     {
         juce::String stateID = "state" + juce::String(rotation);
@@ -265,16 +271,51 @@ TingeAudioProcessor::createParameterLayout()
 
         layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID { rateSyncID, 1},
                                                                 rateSyncName, juce::StringArray {
-            "Reverse 32nd Triplet", "Reverse 32nd", "Reverse 16th Triplet", "Reverse 16th",
-            "Reverse 8th Triplet", "Reverse 16th Dotted", "Reverse 8th", "Reverse Quarter Triplet",
-            "Reverse 8th Dotted", "Reverse Quarter", "Reverse Half Triplet", "Reverse Quarter Dotted",
-            "Reverse Half", "Reverse Whole Triplet", "Reverse Half Dotted", "Reverse Whole",
-            "Reverse 2 Measures Triplet", "Reverse Whole Dotted", "Reverse 2 Measures", "Reverse 2 Measures Dotted",
-            "Reverse 4 Measures", "Reverse 8 Measures", "Static", "8 Measures", "4 Measures",
-            "2 Measures Dotted", "2 Measures", "Whole Dotted", "2 Measures Triplet", "Whole",
-            "Half Dotted", "Whole Triplet", "Half", "Quarter Dotted",
-            "Half Triplet", "Quarter", "8th Dotted", "Quarter Triplet",
-            "8th", "16th Dotted", "8th Triplet", "16th", "16th Triplet", "32nd", "32nd Triplet"
+            "1/12",     // 32nd triplet
+            "1/8",      // 32nd
+            "1/6",      // 16th triplet
+            "1/4",      // 16th
+            "1/3",      // 8th triplet
+            "3/8",      // 16th dotted
+            "1/2",      // 8th
+            "2/3",      // quarter triplet
+            "3/4",      // 8th dotted
+            "1",        // quarter
+            "4/3",      // half triplet
+            "3/2",      // quarter dotted
+            "2",        // half
+            "8/3",      // whole triplet
+            "3",        // half dotted
+            "4",        // whole
+            "16/3",     // 2 bar triplet
+            "6",        // whole dotted
+            "8",        // 2 bars
+            "12",       // 2 bar dotted
+            "16",       // 4 bars
+            "32",       // 8 bars
+            "0",        // static
+            "-32",      // Reverse 8 bars
+            "-16",      // Reverse 4 bars
+            "-12",      // Reverse 2 bar dotted
+            "-8",       // Reverse 2 bars
+            "-6",       // Reverse whole dotted
+            "-16/3",    // Reverse 2 bar triplet
+            "-4",       // Reverse whole
+            "-3",       // Reverse half dotted
+            "-8/3",     // Reverse whole triplet
+            "-2",       // Reverse half
+            "-3/2",     // Reverse quarter dotted
+            "-4/3",     // Reverse half triplet
+            "-1",       // Reverse quarter
+            "-3/4",     // Reverse 8th dotted
+            "-2/3",     // Reverse quarter triplet
+            "-1/2",     // Reverse 8th
+            "-3/8",     // Reverse 16th dotted
+            "-1/3",     // Reverse 8th triplet
+            "-1/4",     // Reverse 16th
+            "-1/6",     // Reverse 16th triplet
+            "-1/8",     // Reverse 32nd
+            "-1/12"     // Reverse 32nd triplet
         }, 22));
         
         juce::String rateModeID = "rateMode" + juce::String(rotation);
@@ -297,23 +338,26 @@ TingeAudioProcessor::createParameterLayout()
 
         layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { phaseID, 1},
                                                                phaseName,
-                                                               juce::NormalisableRange<float> { 0.0f, 100.0f, 0.01 }, 0.0f));
+                                                               juce::NormalisableRange<float> { 0.0f, 100.0f, 0.01 }, phaseDefaults[rotation]));
 
         juce::String opacityID = "opacity" + juce::String(rotation);
         juce::String opacityName = "Opacity " + juce::String(rotation);
         
         layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { opacityID, 1},
                                                                rateFreeName,
-                                                               juce::NormalisableRange<float> { 0.0, 1.0f, 0.01 }, 0.0f));
+                                                               juce::NormalisableRange<float> { 0.0, 1.00f, 0.01 }, 100.0f));
 
-        juce::String nudgeStrengthID = "nudgeSrength" + juce::String(rotation);
-        juce::String nudgeStrengthName = "Nudge Strength" + juce::String(rotation);
+        juce::String colorIndexID = "colorIndex" + juce::String(rotation);
+        juce::String colorIndexName = "Color Choice " + juce::String(rotation);
 
-        layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { nudgeStrengthID, 1},
-                                                               nudgeStrengthName,
-                                                               juce::NormalisableRange<float> { 0.0f, 20000.0f, 0.01 }, 10000.0f));
-         
-    }
+        layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID { colorIndexID, 1},
+                                                                colorIndexName, juce::StringArray {
+            "Yellow", "Chartreuse", "Yellow-Green", "Spring-Green", "Green", "Blue-Green",
+            "Aqua-Green", "Aqua-Blue", "Turquoise-Blue", "Cerulean-Blue", "Blue", "Blue-Violet",
+            "Violet", "Red-Violet", "Purple", "Fuchsia", "Magenta", "Blue-Red", "Red",
+            "Orange-Red", "Orange", "Yellow-Orange", "Orange-Yellow", "Golden-Yellow"
+        }, colorIndexDefaults[rotation]));
+    } 
 
     return layout;
 }

@@ -22,6 +22,11 @@ public:
         this->index = index;
     }
     
+    void setColor(int colorA, int colorB, int colorC, float opacityA, float opacityB, float opacityC)
+    {
+        p.setColors(colorA, colorB, colorC, opacityA, opacityB, opacityC);
+    }
+    
     void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider) override
     {
         auto bounds = slider.getLocalBounds().toFloat();
@@ -32,20 +37,21 @@ public:
         float graphicHeight = bounds.getHeight();
 
         if(index == 0){
-            // rate
             drawRate(g, xPos, yPos, graphicWidth, graphicHeight, sliderPosProportional);
             
         } else if (index == 1){
-            
-   //         size = size/2;
             drawDivision(g, xPos, yPos, graphicWidth, graphicHeight, sliderPosProportional);
 
         } else if (index == 2){
-            drawPhaseSlider(g, xPos, yPos, size, sliderPosProportional);
+       //    drawColorPicker(g, xPos, yPos, graphicWidth, graphicHeight, sliderPosProportional);
+
         } else if (index == 3){
             float position = sliderPosProportional * 7;
             position = std::floor(position);
             drawOverlapSlider(g, xPos, yPos, size, position);
+
+        } else if (index == 4){
+            
         }
     }
     
@@ -63,24 +69,24 @@ public:
         
         if (index == 0)
         {
-            drawWithoutOverlap(g, pathA, Colors::graphicRed);
-            drawWithoutOverlap(g, pathB, Colors::graphicGreen);
-            drawWithoutOverlap(g, pathC, Colors::graphicBlue);
+            drawWithoutOverlap(g, pathA, p.colorA);
+            drawWithoutOverlap(g, pathB, p.colorB);
+            drawWithoutOverlap(g, pathC, p.colorC);
             
-            drawDoubleOverlap(g, pathA, pathB, Colors::backgroundFillAlt);
-            drawDoubleOverlap(g, pathB, pathC, Colors::backgroundFillAlt);
-            drawDoubleOverlap(g, pathA, pathC, Colors::backgroundFillAlt);
-            drawTripleOverlap(g, pathA, pathB, pathC, Colors::backgroundFillAlt);
+            drawDoubleOverlap(g, pathA, pathB, Colors::backgroundFill);
+            drawDoubleOverlap(g, pathB, pathC, Colors::backgroundFill);
+            drawDoubleOverlap(g, pathA, pathC, Colors::backgroundFill);
+            drawTripleOverlap(g, pathA, pathB, pathC, Colors::backgroundFill);
         } else if (index == 1)
         {
-            drawWithoutOverlap(g, pathA, Colors::backgroundFillAlt);
-            drawWithoutOverlap(g, pathB, Colors::backgroundFillAlt);
-            drawWithoutOverlap(g, pathC, Colors::backgroundFillAlt);
+            drawWithoutOverlap(g, pathA, Colors::backgroundFill);
+            drawWithoutOverlap(g, pathB, Colors::backgroundFill);
+            drawWithoutOverlap(g, pathC, Colors::backgroundFill);
             
-            drawDoubleOverlap(g, pathA, pathB, Colors::graphicYellow);
-            drawDoubleOverlap(g, pathB, pathC, Colors::graphicCyan);
-            drawDoubleOverlap(g, pathA, pathC, Colors::graphicMagenta);
-            drawTripleOverlap(g, pathA, pathB, pathC, Colors::backgroundFillAlt);
+            drawDoubleOverlap(g, pathA, pathB, p.colorAB);
+            drawDoubleOverlap(g, pathB, pathC, p.colorBC);
+            drawDoubleOverlap(g, pathA, pathC, p.colorAC);
+            drawTripleOverlap(g, pathA, pathB, pathC, Colors::backgroundFill);
             
         } else if (index == 2)
         {
@@ -91,52 +97,52 @@ public:
             drawDoubleOverlap(g, pathA, pathB, Colors::backgroundFill);
             drawDoubleOverlap(g, pathB, pathC, Colors::backgroundFill);
             drawDoubleOverlap(g, pathA, pathC, Colors::backgroundFill);
-            drawTripleOverlap(g, pathA, pathB, pathC, Colors::graphicWhite);
+            drawTripleOverlap(g, pathA, pathB, pathC, p.colorABC);
 
         } else if (index == 3)
         {
-            drawWithoutOverlap(g, pathA, Colors::graphicRed);
-            drawWithoutOverlap(g, pathB, Colors::graphicGreen);
-            drawWithoutOverlap(g, pathC, Colors::graphicBlue);
+            drawWithoutOverlap(g, pathA, p.colorA);
+            drawWithoutOverlap(g, pathB, p.colorB);
+            drawWithoutOverlap(g, pathC, p.colorC);
 
-            drawDoubleOverlap(g, pathA, pathB, Colors::graphicYellow);
-            drawDoubleOverlap(g, pathB, pathC, Colors::graphicCyan);
-            drawDoubleOverlap(g, pathA, pathC, Colors::graphicMagenta);
-            drawTripleOverlap(g, pathA, pathB, pathC, Colors::backgroundFill);
+            drawDoubleOverlap(g, pathA, pathB, p.colorAB);
+            drawDoubleOverlap(g, pathB, pathC, p.colorBC);
+            drawDoubleOverlap(g, pathA, pathC, p.colorAC);
+            drawTripleOverlap(g, pathA, pathB, pathC, p.colorABC);
 
         } else if (index == 4)
         {
-            drawWithoutOverlap(g, pathA, Colors::graphicRed);
-            drawWithoutOverlap(g, pathB, Colors::graphicGreen);
-            drawWithoutOverlap(g, pathC, Colors::graphicBlue);
+            drawWithoutOverlap(g, pathA, p.colorA);
+            drawWithoutOverlap(g, pathB, p.colorB);
+            drawWithoutOverlap(g, pathC, p.colorC);
 
-            drawDoubleOverlap(g, pathA, pathB, Colors::backgroundFill);
-            drawDoubleOverlap(g, pathB, pathC, Colors::backgroundFill);
-            drawDoubleOverlap(g, pathA, pathC, Colors::backgroundFill);
-            drawTripleOverlap(g, pathA, pathB, pathC, Colors::graphicWhite);
+            drawDoubleOverlap(g, pathA, pathB, p.colorAB);
+            drawDoubleOverlap(g, pathB, pathC, p.colorBC);
+            drawDoubleOverlap(g, pathA, pathC, p.colorAC);
+            drawTripleOverlap(g, pathA, pathB, pathC, p.colorABC);
         } else if (index == 5)
         {
             drawWithoutOverlap(g, pathA, Colors::backgroundFill);
             drawWithoutOverlap(g, pathB, Colors::backgroundFill);
             drawWithoutOverlap(g, pathC, Colors::backgroundFill);
 
-            drawDoubleOverlap(g, pathA, pathB, Colors::graphicYellow);
-            drawDoubleOverlap(g, pathB, pathC, Colors::graphicCyan);
-            drawDoubleOverlap(g, pathA, pathC, Colors::graphicMagenta);
-            drawTripleOverlap(g, pathA, pathB, pathC, Colors::graphicWhite);
+            drawDoubleOverlap(g, pathA, pathB, p.colorAB);
+            drawDoubleOverlap(g, pathB, pathC, p.colorBC);
+            drawDoubleOverlap(g, pathA, pathC, p.colorAC);
+            drawTripleOverlap(g, pathA, pathB, pathC, p.colorABC);
         } else if (index == 6)
         {
-            drawWithoutOverlap(g, pathA, Colors::graphicRed);
-            drawWithoutOverlap(g, pathB, Colors::graphicGreen);
-            drawWithoutOverlap(g, pathC, Colors::graphicBlue);
+            drawDoubleOverlap(g, pathA, pathB, p.colorAB);
+            drawDoubleOverlap(g, pathB, pathC, p.colorBC);
+            drawDoubleOverlap(g, pathA, pathC, p.colorAC);
 
-            drawDoubleOverlap(g, pathA, pathB, Colors::graphicYellow);
-            drawDoubleOverlap(g, pathB, pathC, Colors::graphicCyan);
-            drawDoubleOverlap(g, pathA, pathC, Colors::graphicMagenta);
-            drawTripleOverlap(g, pathA, pathB, pathC, Colors::graphicWhite);
+            drawDoubleOverlap(g, pathA, pathB, p.colorAB);
+            drawDoubleOverlap(g, pathB, pathC, p.colorBC);
+            drawDoubleOverlap(g, pathA, pathC, p.colorAC);
+            drawTripleOverlap(g, pathA, pathB, pathC, p.colorABC);
         }
         
-        g.setColour(Colors::backgroundFill);
+        g.setColour(p.colorABC);
         g.strokePath(pathA, juce::PathStrokeType(1.5f));
         g.strokePath(pathB, juce::PathStrokeType(1.5f));
         g.strokePath(pathC, juce::PathStrokeType(1.5f));
@@ -144,79 +150,23 @@ public:
 
     }
     
-    
-    /*
-    void drawRateMeasurement(juce::Graphics &g, float x, float y, float width, float height, float position)
-    {
-        
-        float graphicWidth = width * 0.9f;
-        float widthMargin = width * 0.05f;
-        float graphicHeight = height * 0.9f;
-        float heightMargin = width * 0.05f;
-
-        juce::PathStrokeType strokeType(1.5f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded);
-
-        juce::Point centerTopCoords = { x + widthMargin + graphicWidth * position, y + heightMargin};
-        juce::Point centerBotCoords = { x + widthMargin + graphicWidth * position, y + heightMargin + graphicHeight };
-        
-        g.setColour(Colors::graphicWhite);
-        juce::Path centerPath;
-        centerPath.startNewSubPath(centerTopCoords);
-        centerPath.lineTo(centerBotCoords);
-        g.strokePath(centerPath, strokeType);
-        centerPath.addCentredArc(centerTopCoords.x, centerTopCoords.y, 3.0f, 3.0f, 0.0f, 0.0f, 6.28f, true);
-        g.fillPath(centerPath);
-        
-
-        for (int i = 0 ; i < 9; i++)
-        {
-            juce::Path measurementPath;
-
-            if (i < 4)
-            {
-                float measurementIncr = (graphicWidth * position)/4;
-                juce::Point measurementTopCoords = { x + widthMargin + measurementIncr * i, y + heightMargin + graphicHeight * 0.5f };
-                juce::Point measurementBotCoords = { x + widthMargin + measurementIncr * i, y + heightMargin + graphicHeight};
-                
-                measurementPath.startNewSubPath(measurementTopCoords);
-                measurementPath.lineTo(measurementBotCoords);
-                g.strokePath(measurementPath, strokeType);
-                
-            } else if (i > 4) {
-                int j = i - 4;
-                float widthOffset = graphicWidth * position;
-                float measurementIncr = ((graphicWidth * (1.0f - position))/4) * j;
-
-                juce::Point measurementTopCoords = { x + widthMargin + widthOffset + measurementIncr, y + heightMargin + graphicHeight * 0.5f };
-                juce::Point measurementBotCoords = { x + widthMargin + widthOffset + measurementIncr, y + heightMargin + graphicHeight};
-                
-                measurementPath.startNewSubPath(measurementTopCoords);
-                measurementPath.lineTo(measurementBotCoords);
-                g.strokePath(measurementPath, strokeType);
-            }
-        }
-        
-        juce::Path bottomPath;
-        bottomPath.startNewSubPath(x + widthMargin, y + heightMargin + graphicHeight - 2);
-        bottomPath.lineTo(x + widthMargin + graphicWidth, y + heightMargin + graphicHeight - 2);
-        g.strokePath(bottomPath, strokeType);
-
-    }
-    */
-    
     void drawRate(juce::Graphics &g, float x, float y, float width, float height, float position)
     {
         juce::Point<float> leftCoords = { x + width * 0.025f, y + height * 0.9f };
         juce::Point<float> rightCoords = { x + width * 0.975f, y + height * 0.9f };
 
         juce::Point<float> midCoords = {
-            x + (width * 0.025f) + (width * 0.95f * position),
+            x + (width * 0.175f) + (width * 0.65f * position),
             y + height * 0.025f };
+        
+        float positionScaled = 1.0f - (std::abs(position - 0.5f) * 2.0f);
+        float widthScaled = (width * 0.15f * positionScaled) + (width * 0.05f);
+        
         juce::Point<float> midLeftCoords = {
-            juce::jlimit(x + width * 0.025f, x + width * 0.975f, midCoords.x - width * 0.15f),
+            juce::jlimit(x + width * 0.125f, x + width * 0.875f, midCoords.x - widthScaled),
             y + height * 0.9f };
         juce::Point<float> midRightCoords = {
-            juce::jlimit(x + width * 0.025f, x + width * 0.975f, midCoords.x + width * 0.15f),
+            juce::jlimit(x + width * 0.125f, x + width * 0.875f, midCoords.x + widthScaled),
             y + height * 0.9f };
         
         juce::Path graphicLines;
@@ -235,171 +185,34 @@ public:
         
     }
     
-    juce::Point<float> interpolateToVanishing(juce::Point<float> origin, juce::Point<float> vanPoint)
-    {
-        
-        juce::Point<float> interpolatedPoint {
-            origin.x + (vanPoint.x - origin.x) * 0.2f,
-            origin.y + (vanPoint.y - origin.y) * 0.2f };
-        
-        return interpolatedPoint;
-    }
-    
     void drawDivision(juce::Graphics &g, float x, float y, float width, float height, float position)
     {
-        float division = position * 4;
-        division = std::floor(division) + 1;
+        // coordinates
+        int positionScaled = std::floor(position * 4.0f + 1);
+        float widthMargin = width * 0.05;
+        width = width * 0.9;
+        float segmentSize = width/positionScaled;
 
-        float widthIncr = width * 0.9f/4;
-        float widthMargin = (width * 0.05f);
-        float graphicHeight = height * 0.6f;
-        float heightMargin = height * 0.2f;
-        
-        float vpAdjust = width * 0.75f * (position - 0.5f);
-        juce::Point<float> vanishingPoint = { (x + width/2) + vpAdjust, y + height/2 };
-        
-        for (int i = 0; i < 5; i++)
+        float heightMargin = height * 0.05f;
+        height = height * 0.9f;
+        float blockMargin = segmentSize * 0.1f;
+        float blockSize = segmentSize * 0.8f;
+        //==============================================================================
+        for (int i = 0; i < positionScaled; i++)
         {
-            juce::Point<float> frontTopCoords = { x + widthMargin + widthIncr * i, y + heightMargin };
-            juce::Point<float> frontBotCoords  = { x + widthMargin  + widthIncr * i, y + heightMargin + graphicHeight };
-            juce::Point<float> backTopCoords = interpolateToVanishing(frontTopCoords, vanishingPoint);
-            juce::Point<float> backBotCoords = interpolateToVanishing(frontBotCoords, vanishingPoint);
-
-            juce::Path frontPath, bodyPath;
-            bodyPath.startNewSubPath(frontTopCoords);
-            bodyPath.lineTo(frontBotCoords);
-            bodyPath.lineTo(backBotCoords);
-            bodyPath.lineTo(backTopCoords);
-            juce::Colour fillColour = (i >= division) ? juce::Colour(140, 140, 140) : Colors::graphicWhite;
-            g.setColour(fillColour);
-            g.fillPath(bodyPath);
-            
-            // front lines
-            frontPath.startNewSubPath(frontTopCoords);
-            frontPath.lineTo(frontBotCoords);
-            g.setColour(fillColour);
-            juce::PathStrokeType thickStroke(1.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded);
-            g.strokePath(frontPath, juce::PathStrokeType(thickStroke));
-
-        }
-    }
-    
-
-    /*
-    void drawDivision(juce::Graphics &g, float x, float y, float size, float division, bool isSelected)
-    {
-        float radius = size * 0.35f;
-        float twopi = juce::MathConstants<float>::twoPi;
-                
-        float segmentSize = twopi/division * 2;
-        
-        for(int i = 0; i < division; i += 2)
-        {
-            float startAngle = i * segmentSize;
-            float endAngle = (i + 1) * segmentSize;
-
             juce::Path graphicPath;
-                graphicPath.startNewSubPath(x + size/2, (y + size/2));
-                graphicPath.addCentredArc(x + size/2, (y + size/2), radius, radius, 0.0f, startAngle, endAngle);
-                graphicPath.closeSubPath();
-
-            if (i % 2 == 0) {
-                juce::Colour selection = isSelected ? juce::Colour(200, 200, 200) : juce::Colour(150, 150, 150);
-                g.setColour(selection);
-                g.fillPath(graphicPath);
-                
-            } else if (i % 2 == 1) {
-                g.setColour(juce::Colour(125, 125, 125));
-                g.fillPath(graphicPath);
-
-            }
+            float xPosition = widthMargin + blockMargin + i * (blockSize + blockMargin * 2);
+            graphicPath.addRoundedRectangle(xPosition, heightMargin, blockSize, height, 3);
+            graphicPath = graphicPath.createPathWithRoundedCorners(3);
+            
+            g.setColour(juce::Colour(255, 255, 255));
+            g.fillPath(graphicPath);
         }
-    }
-    */
-     
-    void drawPhaseSlider(juce::Graphics &g, float x, float y, float size, float position)
-    {
-        /*
-        int domainResolution = 128;
-        float width = size * 0.9f;
-        float widthMargin = size * 0.05f;
-        float widthIncrement = width/domainResolution;
-        
-        juce::Path graphicPath;
-        graphicPath.startNewSubPath(x + widthMargin, y + size/2);
-        for (int i = 0; i < domainResolution; i++)
-        {
-            float sin = 1.0f * std::sin((i/40.7f) * 2.0f);
-            graphicPath.lineTo(x + widthMargin + widthIncrement * i,
-                               (y + size/2) + (size * sin/2) * 0.8f);
-        }
-    
-        graphicPath = graphicPath.createPathWithRoundedCorners(4.0f);
-        juce::PathStrokeType strokeType(2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded);
-        g.setColour(juce::Colour(150, 150, 150));
-        g.strokePath(graphicPath, strokeType);
-        
-        float sin = std::sin(position * 6.28f);
-        juce::Point positionCoords = { x + widthMargin + width * position, (y + size/2) + (size * sin/2) * 0.8f };
-
-        juce::Path pointPath;
-        pointPath.addCentredArc(positionCoords.x, positionCoords.y, 3.0f, 3.0f, 0.0f, 0.0f, 6.28f, true);
-        g.setColour(juce::Colour(200, 200, 200)); //
-        g.fillPath(pointPath);
-         */
-    }
-    
-    
-
-    void drawRoundDial(juce::Graphics &g, float x, float y, float size, float position)
-    {
-        //==============================================================================
-
-        float pi = juce::MathConstants<float>::pi;
-        float dialStart = 1.25f * pi;
-        float dialEnd = 2.75f * pi;
-        float sliderPositionScaled = 2.0f + (1.0f - position);
-        float dialPositionInRadians = dialStart + sliderPositionScaled * (dialEnd - dialStart);
-        
-
-        juce::Path dialBodyPath, dialDotPath, dialOutlinePath, dialSelectPath, tensionLeftPath, tensionRightPath;
-        
-        float dialOutlineRadius = (size * 0.8f)/2;
-        float dialBodyRadius = (size * 0.7f)/2;
-        float dialDotRadius = (size * 0.5f)/2;
-
-        dialOutlinePath.addCentredArc(x + size/2, x + size/2,
-                                      dialOutlineRadius, dialOutlineRadius,
-                                      0.0f, dialStart, dialEnd, true);
-        g.setColour(juce::Colour(200, 200, 200)); //
-
-        juce::PathStrokeType strokeType(2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded);
-        g.strokePath(dialOutlinePath, juce::PathStrokeType(strokeType));
-
-        //==============================================================================
-        // dial body
-        
-        dialBodyPath.addCentredArc(x + size/2, y + size/2,
-                                   dialBodyRadius, dialBodyRadius,
-                                   0.0f, 0.0f, 6.28f, true);
-        g.setColour(juce::Colour(200, 200, 200)); //
-        g.fillPath(dialBodyPath);
-        
-        //==============================================================================
-        // dial dot
-        
-        juce::Point<float> outlineCoords = {x + size/2 + std::sin(dialPositionInRadians) * dialDotRadius,
-            x + size/2 + std::cos(dialPositionInRadians) * dialDotRadius};
-
-        dialDotPath.addCentredArc(outlineCoords.x, outlineCoords.y,
-                                  1.5, 1.5, 0.0f, 0.0f, pi * 2, true);
-        
-        g.setColour(juce::Colour(20, 20, 20)); //
-        g.fillPath(dialDotPath);
     }
     
 private:
     int index;
+    Palette p;
 };
 
 
@@ -423,21 +236,48 @@ public:
         
         if (graphicIndex == 0)
         {
-            drawNudgeButton(g, x, y, width, shouldDrawButtonAsDown, false);
-            
+            drawNudgeButton(g, x, y, width, shouldDrawButtonAsDown, true);
         } else if (graphicIndex == 1)
         {
-            drawNudgeButton(g, x, y, width, shouldDrawButtonAsDown, true);
+            drawNudgeButton(g, x, y, width, shouldDrawButtonAsDown, false);
         } else if (graphicIndex == 2)
         {
             drawBrakeButton(g, x, y, width, shouldDrawButtonAsDown);
         }
+    }
 
+    void setLPGValue(float lpgValue)
+    {
+        this->lpgValue = lpgValue;
     }
     
     void drawNudgeButton(juce::Graphics& g, float x, float y, float size, bool buttonDown, bool mirror)
     {
+        for (int i = 0; i < 5; i++)
+        {
+            float sizeIncr = (size/5) * (i * (1.0f - lpgValue));
+            juce::Point<float> topPoint = { x + sizeIncr, y };
+            juce::Point<float> botPoint = { x + sizeIncr, y + size };
+            
+            juce::Path graphicPath;
+            graphicPath.startNewSubPath(topPoint);
+            graphicPath.lineTo(botPoint);
+            
+            if (mirror)
+            {
+                float centerX = x + size * 0.5f;
+                juce::AffineTransform mirrorTransform =
+                    juce::AffineTransform::translation(-centerX, 0.0f)
+                    .scaled(-1.0f, 1.0f)
+                    .translated(centerX, 0.0f);
+                graphicPath.applyTransform(mirrorTransform);
+            }
+            
+            g.setColour(Colors::graphicWhite);
+            g.strokePath(graphicPath, juce::PathStrokeType(1.5f));
+        }
         
+        /*
         juce::Rectangle<float> baseRect { x + size * 0.15f, y + size * 0.15f, size * 0.5f, size * 0.7f };
         float offset = baseRect.getWidth() * 0.5f;
         float rectSize = baseRect.getHeight();
@@ -489,12 +329,12 @@ public:
         g.setColour(mainFill);
         g.fillPath(graphicPath);
 
-        
+        */
     }
     
     void drawBrakeButton(juce::Graphics& g, float x, float y, float size, bool buttonDown)
     {
-        
+        /*
         juce::Rectangle<float> rectangle { x + size * 0.15f, y + size * 0.15f, size * 0.7f, size * 0.7f };
         
         juce::Path graphicPath;
@@ -520,15 +360,35 @@ public:
         juce::Colour mainFill = buttonDown ? Colors::graphicWhite : Colors::graphicWhiteAlt;
         g.setColour(mainFill);
         g.fillPath(graphicPath);
-
+         */
     }
 
 private:
     int graphicIndex;
+    float lpgValue;
 };
 
+class ColorButtonGraphics : public juce::LookAndFeel_V4
+{
+public:
+    void drawButtonBackground (juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
+    {
+        auto bounds = juce::Rectangle<int>(button.getWidth(), button.getWidth()).toFloat();
+        bounds.reduce(2, 2);
+        
+        float alpha = shouldDrawButtonAsDown ? 1.0f : 0.25f;
+        g.setColour(Colors::gradientColor[colorButtonIndex].withAlpha((float)alpha));
+        g.fillRoundedRectangle(bounds, 3);
+    }
+    
+    void setColorButtonIndex(int index)
+    {
+        colorButtonIndex = index;
+    }
 
-
+private:
+    int colorButtonIndex = 0;
+};
 
 class EditableTextBoxSlider : public juce::Component , juce::AudioProcessorParameter::Listener, juce::AsyncUpdater, juce::Label::Listener
 {
@@ -686,3 +546,4 @@ private:
     
     TingeAudioProcessor& audioProcessor;
 };
+

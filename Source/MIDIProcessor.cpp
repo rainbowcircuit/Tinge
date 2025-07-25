@@ -9,7 +9,6 @@ void MIDIProcessor::prepareToPlay(double sampleRate)
     {
         noteValue[i].noteNumber = -1;
         noteValue[i].isAvailable = true;
-
     }
 }
 
@@ -96,11 +95,11 @@ void Spinner::setSampleRate(double sampleRate)
 
 }
 
-void Spinner::setRate(int rateBPM, float rateFree, bool isSynced, float phaseOffset)
+void Spinner::setRate(int rateBPM, float rateFree, bool rateMode, float phaseOffset)
 {
     this->rateBPM = rateBPM;
     this->rateFree = rateFree;
-    this->isSynced = isSynced;
+    this->rateMode = rateMode;
     this->phaseOffset = phaseOffset;
 }
 
@@ -111,7 +110,6 @@ void Spinner::reset()
 
 void Spinner::tempo(juce::AudioPlayHead* playhead)
 {
-    reset();
     if (playhead == nullptr){
         return;
     }
@@ -158,20 +156,27 @@ void Spinner::nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, in
 void Spinner::accumulate()
 {
     float nudgeValue = (forwardLPG.generateEnvelope() + (backwardLPG.generateEnvelope() * -1.0f)) * 10.0f;
-    
     float brakeValue = (1.0f - brakeLPG.generateEnvelope());
     
-    if (!isSynced)
+    if (rateMode) // sync
     {
-        float rateInHz = (rateFree + nudgeValue)/sampleRate;
-        phase += rateInHz * brakeValue;
+        if (rateBPM < 0 || rateBPM >= subdivisionMultiplier.size())
+            return;
         
-    } else {
-        float bpmInHz = (bpm/60.0f) + nudgeValue * subdivisionMultiplier[rateBPM];
-        phase += bpmInHz * brakeValue;
-    }
-    if (phase > 1.0f) phase -= 1.0f;
+        float multiplier = subdivisionMultiplier[rateBPM];
+        if (multiplier == 0.0f)
+            return;
 
+        float bpmInHz = ((bpm/60.0f) + nudgeValue) * multiplier;
+        phase += (bpmInHz/sampleRate) * brakeValue;
+
+    } else {
+        float rateInHz = (rateFree + nudgeValue);
+        phase += (rateInHz/sampleRate) * brakeValue;
+
+    }
+    
+    if (phase > 1.0f) phase -= 1.0f;
     previousPhase = phase;
 }
 
