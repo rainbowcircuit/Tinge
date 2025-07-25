@@ -107,11 +107,11 @@ public:
         }
     }
     
-    void setSpinnerValues(int index, bool state, float phase, float division, float opacity)
+    void setSpinnerValues(int index, bool state, float phase, float ratio, float opacity)
     {
         rotationValue[index].state = state;
         rotationValue[index].phase = phase;
-        rotationValue[index].division = division;
+        rotationValue[index].ratio = ratio;
     }
     
     void setOverlap(int overlap)
@@ -122,8 +122,8 @@ public:
 private:
     
     double sampleRate;
-    int numNoteOn;
-    int overlap;
+    int numNoteOn = 0;
+    int overlap = 0;
     float noteScale, velocityScale, controllerScale, slewAmount;
     
     struct NoteValue
@@ -149,7 +149,6 @@ public:
     void setRate(int rateBPM, float rateFree, bool isSynced, float phaseOffset);
     void tempo(juce::AudioPlayHead* playhead);
 
-    void setDivision(int division);
     void nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, int brake);
     void accumulate();
     float getPhase();
@@ -165,55 +164,47 @@ private:
     float rateFree = 0.0f;
     bool rateMode = false;
         
-    std::array <double, 45> subdivisionMultiplier =
+    std::array <double, 39> subdivisionMultiplier =
     {
-        0.0833333, // 32nd triplet
-        0.125,     // 32nd
-        0.1666667, // 16th triplet
-        0.25,      // 16th
-        0.3333333, // 8th triplet
-        0.375,     // 16th dotted
-        0.5,       // 8th
-        0.6666667, // quarter triplet
-        0.75,      // 8th dotted
-        1.0,       // quarter
-        1.3333333, // half triplet
-        1.5,       // quarter dotted
-        2.0,       // half
-        2.6666667, // whole triplet
-        3.0,       // half dotted
-        4.0,       // whole
-        5.3333333, // 2 bar triplet
-        6.0,       // whole dotted
-        8.0,       // 2 bars
-        12.0,      // 2 bar dotted
-        16.0,      // 4 bars
-        32.0,       // 8 bars
-        0.0f, // static
-        -32.0,      // 8 bars
-        -16.0,      // 4 bars
-        -12.0,      // 2 bar dotted
-        -8.0,       // 2 bars
-        -6.0,       // whole dotted
-        -5.3333333, // 2 bar triplet
-        -4.0,       // whole
-        -3.0,       // half dotted
-        -2.6666667, // whole triplet
-        -2.0,       // half
-        -1.5,       // quarter dotted
-        -1.3333333, // half triplet
-        -1.0,       // quarter
-        -0.75,      // 8th dotted
-        -0.6666667, // quarter triplet
-        -0.5,       // 8th
-        -0.375,     // 16th dotted
-        -0.3333333, // 8th triplet
-        -0.25,      // 16th
-        -0.1666667, // 16th triplet
-        -0.125,     // 32nd
-        -0.0833333  // 32nd triplet
-
-    };
+        8.0,
+        6.0,
+        5.3333333,
+        4.0,
+        3.0,
+        2.6666667,
+        2.0,
+        1.5,
+        1.3333333,
+        1.0,
+        0.75,
+        0.6666667,
+        0.5,
+        0.375,
+        0.3333333,
+        0.25,
+        0.1666667,
+        0.125,
+        0.0833333,
+        0.0f,
+       -0.0833333,
+       -0.125,
+       -0.1666667,
+       -0.25,
+       -0.3333333,
+       -0.375,
+       -0.5,
+       -0.6666667,
+       -0.75,
+       -1.0,
+       -1.3333333,
+       -1.5,
+       -2.0,
+       -2.6666667,
+       -3.0,
+       -4.0,
+       -5.3333333,
+       -6.0,
+       -8.0 };
 };
 
 

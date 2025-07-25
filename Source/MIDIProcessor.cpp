@@ -125,11 +125,6 @@ void Spinner::tempo(juce::AudioPlayHead* playhead)
     }
 }
 
-void Spinner::setDivision(int division)
-{
-    
-}
-
 void Spinner::nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, int brake)
 {
     float riseScaled = nudgeStrength * 4.0f;

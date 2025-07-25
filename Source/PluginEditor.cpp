@@ -31,10 +31,6 @@ TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, st
     addAndMakeVisible(*globalLayout);
     addAndMakeVisible(*valueAssignmentLayout);
 
-    
-    setSize (650, 450);
-    startTimer(30);
-    
     updater.addAnimator(isoEnterToggle);
     updater.addAnimator(isoExitToggle);
     
@@ -60,6 +56,9 @@ TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, st
     for (auto param : params){
         param->addListener(this);
     }
+    
+    setSize (650, 450);
+    startTimerHz(60);
 }
 
 TingeAudioProcessorEditor::~TingeAudioProcessorEditor()
@@ -116,51 +115,23 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
     
     globalLayout->setBounds(0, 400, width, 50);
     
-    
-    //noteScaleSlider.setBounds(10, 10, 80, 60);
-    //velocityScaleSlider.setBounds(80, 10, 80, 60);
-    //controlScaleSlider.setBounds(10, 80, 80, 60);
-    
-    
-
 }
 
 void TingeAudioProcessorEditor::resized()
 {
     overlapSlider.setBounds(5, 5, 80, 80);
-//    offsetSlider.setBounds(5, 90, 80, 80);
     
 }
 
 
 void TingeAudioProcessorEditor::timerCallback()
 {
-    
-    
     phases = phasesAtomic.load();
 
     for (int index = 0; index < 3; index++)
     {
         spinnerGraphics.setPhase(index, phases[index]);
     }
-    
-    spinnerGraphics.setOverlapIndex(overlap);
-
-    // maybe clean this up
-    auto mouse = getMouseXYRelative();
-    bool hover1 = rotationLayout1->isMouseOver(mouse);
-    bool hover2 = rotationLayout2->isMouseOver(mouse);
-    bool hover3 = rotationLayout3->isMouseOver(mouse);
-    
-    int hoverValue;
-    if (hover1) { hoverValue = 0; }
-    else if (hover2) { hoverValue = 1; }
-    else if (hover3) { hoverValue = 2; }
-    else { hoverValue = -1; }
-    spinnerGraphics.setHover(hoverValue);
-    
-    
-    
     
     std::array<float, 16> heldNotes = noteValuesAtomic.load();
     spinnerGraphics.setNumThresholds(heldNotes);
@@ -187,12 +158,12 @@ void TingeAudioProcessorEditor::parameterValueChanged (int parameterIndex, float
     for (int index = 0 ; index < 3; index++){
         auto incr = juce::String(index);
         
-        division[index] = juce::String("division") + incr == newParameterID ? scaledValue : division[index];
+        ratio[index] = juce::String("ratio") + incr == newParameterID ? scaledValue : ratio[index];
         state[index] = juce::String("state") + incr == newParameterID ? scaledValue : state[index];
         colorIndex[index] = juce::String("colorIndex") + incr == newParameterID ? scaledValue : colorIndex[index];
         opacity[index] = juce::String("opacity") + incr == newParameterID ? scaledValue : opacity[index];
 
-        spinnerGraphics.setParams(index, division[index], state[index], colorIndex[index], opacity[index]);
+        spinnerGraphics.setParams(index, ratio[index], state[index], colorIndex[index], opacity[index]);
     }
     
     globalLayout->setLPGStrength(nudgeStrength);
@@ -208,15 +179,22 @@ void TingeAudioProcessorEditor::initializeParameter()
     nudgeStrength = audioProcessor.apvts.getRawParameterValue(juce::String("nudgeStrength"))->load();
     globalLayout->setLPGStrength(nudgeStrength);
 
+    
+    overlap = audioProcessor.apvts.getRawParameterValue(juce::String("overlap"))->load();
+    spinnerGraphics.setOverlapIndex(overlap);
+    overlapLAF.setColor(colorIndex[0], colorIndex[1], colorIndex[2], opacity[0], opacity[1], opacity[2]);
+    overlapSlider.repaint();
+
     for (int index = 0 ; index < 3; index++){
         auto incr = juce::String(index);
         
-        division[index] = audioProcessor.apvts.getRawParameterValue(juce::String("division") + incr)->load();
+        ratio[index] = audioProcessor.apvts.getRawParameterValue(juce::String("ratio") + incr)->load();
         state[index] = audioProcessor.apvts.getRawParameterValue(juce::String("state") + incr)->load();
         opacity[index] = audioProcessor.apvts.getRawParameterValue(juce::String("opacity") + incr)->load();
         colorIndex[index] = audioProcessor.apvts.getRawParameterValue(juce::String("colorIndex") + incr)->load();
 
-        spinnerGraphics.setParams(index, division[index], state[index], colorIndex[index], opacity[index]);
+        spinnerGraphics.setParams(index, ratio[index], state[index], colorIndex[index], opacity[index]);
+        
     }
 
 }

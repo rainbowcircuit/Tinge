@@ -46,7 +46,7 @@ public:
     
 private:
     float overlap, nudgeStrength;
-    std::array<float, 3> rateFree, rateSync, phase, division, colorIndex, opacity;
+    std::array<float, 3> rateFree, rateSync, phase, ratio, colorIndex, opacity;
     std::array<bool, 3> state, rateMode;
     
     bool isoView = false;

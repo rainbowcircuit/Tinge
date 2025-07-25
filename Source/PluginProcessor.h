@@ -89,7 +89,7 @@ public:
             rateSync[i] = juce::String("rateSync") + incr == newParameterID ? scaledValue : rateSync[i];
             rateMode[i] = juce::String("rateMode") + incr == newParameterID ? scaledValue : rateMode[i];
             phase[i] = juce::String("phase") + incr == newParameterID ? scaledValue : phase[i];
-            division[i] = juce::String("division") + incr == newParameterID ? scaledValue : division[i];
+            ratio[i] = juce::String("ratio") + incr == newParameterID ? scaledValue : ratio[i];
         }
     }
     
@@ -103,10 +103,10 @@ public:
         brake = apvts.getRawParameterValue("brake")->load();
         overlap = apvts.getRawParameterValue("overlap")->load();
 
-        float noteScale = apvts.getRawParameterValue("noteScale")->load();
+     //  float noteScale = apvts.getRawParameterValue("noteScale")->load();
         
-        float velocityScale = apvts.getRawParameterValue("velocityScale")->load();
-        float controlScale = apvts.getRawParameterValue("controlScale")->load();
+     //   float velocityScale = apvts.getRawParameterValue("velocityScale")->load();
+   //     float controlScale = apvts.getRawParameterValue("controlScale")->load();
 
         
             for(int index = 0; index < 3; index++)
@@ -116,23 +116,21 @@ public:
                 juce::String rateSyncID = "rateSync" + juce::String(index);
                 juce::String rateModeID = "rateMode" + juce::String(index);
 
-                juce::String divisionID = "division" + juce::String(index);
+                juce::String ratioID = "ratio" + juce::String(index);
                 juce::String phaseID = "phase" + juce::String(index);
                 juce::String opacityID = "opacity" + juce::String(index);
 
-                float state = apvts.getRawParameterValue(stateID)->load();
+             //   float state = apvts.getRawParameterValue(stateID)->load();
                 float rateFree = apvts.getRawParameterValue(rateFreeID)->load();
                 float rateSync = apvts.getRawParameterValue(rateSyncID)->load();
                 float rateMode = apvts.getRawParameterValue(rateModeID)->load();
 
-                float division = apvts.getRawParameterValue(divisionID)->load();
-                float opacity = apvts.getRawParameterValue(opacityID)->load();
+                float ratio = apvts.getRawParameterValue(ratioID)->load();
+          //      float opacity = apvts.getRawParameterValue(opacityID)->load();
                 float phase = apvts.getRawParameterValue(phaseID)->load();
                 
                 rotation[index].nudge(nudgeStrength, nudgeForward, nudgeBackward, brake);
                 rotation[index].setRate(rateSync, rateFree, rateMode, phase);
-                rotation[index].setDivision(division);
-                
             }
 
     }
@@ -140,7 +138,7 @@ public:
 private:
     float nudgeStrength, nudgeForward, nudgeBackward, brake;
     int overlap;
-    std::array<float, 3> rateFree, rateSync, phase, division, opacity;
+    std::array<float, 3> rateFree, rateSync, phase, ratio, opacity;
     std::array<bool, 3> state, rateMode;
     
     

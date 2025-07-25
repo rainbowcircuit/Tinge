@@ -10,6 +10,14 @@ class GlobalControlLayout : public juce::Component, juce::Button::Listener, juce
 public:
     GlobalControlLayout(TingeAudioProcessor &p) : audioProcessor(p)
     {
+        addAndMakeVisible(nudgeStrengthSlider);
+        nudgeStrengthSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
+        nudgeStrengthSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+        nudgeStrengthSlider.setLookAndFeel(&nudgeStrengthLAF);
+        
+        
+        setLabel(nudgeLabel, "Nudge", juce::Justification::centred);
+        
         addAndMakeVisible(nudgeForwardButton);
         nudgeForwardButton.setLookAndFeel(&nudgeForwardLAF);
         nudgeForwardButton.addListener(this);
@@ -24,9 +32,7 @@ public:
         
         nudgeForwardLPG.setSampleRate(60.0f);
         nudgeForwardLPG.setEnvelopeSlew(4400.0f, 4400.0f);
-
         nudgeBackwardLPG.setSampleRate(60.0f);
-
         brakeLPG.setSampleRate(60.0f);
         
         startTimerHz(60);
@@ -41,13 +47,16 @@ public:
         float width = bounds.getWidth();
         float height = bounds.getHeight();
 
-        nudgeBackwardButton.setBounds(x + 50, y, height, height);
-        nudgeForwardButton.setBounds(x + 100, y, height, height);
         brakeButton.setBounds(x, y, height, height);
+        
+      // nudgeLabel.setBounds(x + width * 0.05f, y + height * 0.75, width * 0.15f, height * 0.15f);
+        nudgeBackwardButton.setBounds(x + width * 0.05f, y, width * 0.05f, height * 0.75f);
+        nudgeForwardButton.setBounds(x + width * 0.15f, y, width * 0.05f, height * 0.75f);
+        nudgeStrengthSlider.setBounds(x + width * 0.2f, y, width * 0.05f, height * 0.75f);
 
     }
     
-    void buttonClicked(juce::Button* b) override { }
+    void buttonClicked(juce::Button* b) override {}
     
     void buttonStateChanged(juce::Button* b) override
     {
@@ -90,31 +99,27 @@ public:
         nudgeBackwardLPG.setEnvelopeSlew(riseScaled, fallScaled);
         brakeLPG.setEnvelopeSlew(riseScaled, fallScaled);
     }
-    
+
 private:
-    void setSlider(juce::Label& label, juce::Slider& slider, juce::Slider::TextEntryBoxPosition textBoxPosition, juce::String labelText, DialGraphics& lookAndFeel)
+    void setLabel(juce::Label& label, juce::String labelText, juce::Justification justification)
     {
-        // initialize label
+        juce::FontOptions font(12.0f, juce::Font::plain);
         addAndMakeVisible(label);
         label.setText(labelText, juce::dontSendNotification);
         label.setColour(juce::Label::textColourId, juce::Colour(80, 80, 80));
-        label.setJustificationType(juce::Justification::centred);
-        juce::FontOptions font(12.0f, juce::Font::plain);
+        label.setJustificationType(justification);
         label.setFont(font);
-
-        // slider
-        addAndMakeVisible(slider);
-        slider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-        slider.setTextBoxStyle(textBoxPosition, false, 50, 20);
-        slider.setLookAndFeel(&lookAndFeel);
     }
-    
-    
+
     ButtonGraphics nudgeForwardLAF { 0 }, nudgeBackwardLAF { 1 }, brakeLAF { 2 };
+    DialGraphics nudgeStrengthLAF { 2 };
     
-    LowPassGate nudgeForwardLPG, nudgeBackwardLPG, brakeLPG;
+    juce::Label nudgeLabel;
+    juce::Slider nudgeStrengthSlider;
     juce::TextButton nudgeBackwardButton, nudgeForwardButton, brakeButton, syncButton;
     
+    LowPassGate nudgeForwardLPG, nudgeBackwardLPG, brakeLPG;
+
     TingeAudioProcessor& audioProcessor;
 };
 
@@ -153,10 +158,9 @@ public:
         rateSyncTextSlider->setSliderMode(true, false);
         rateSyncTextSlider->setVisible(false);
 
-
-        setSlider(ratioSlider, juce::Slider::NoTextBox, ratioLAF);
-        juce::String ratioID = "division" + juce::String(index);
-        ratioAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, ratioID, ratioSlider);
+        ratioTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, "ratio" + juce::String(index), ":1");
+        addAndMakeVisible(*ratioTextSlider);
+        ratioTextSlider->setFontSize(12.0f);
         
         phaseTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, "phase" + juce::String(index), "%");
         addAndMakeVisible(*phaseTextSlider);
@@ -171,9 +175,9 @@ public:
         stateButton.setClickingTogglesState(true);
         stateAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(audioProcessor.apvts, "state" + juce::String(index), stateButton);
         
-        
         addAndMakeVisible(rateModeButton);
         rateModeButton.setToggleable(true);
+        rateModeButton.setToggleState(rateMode, juce::dontSendNotification);
         rateModeButton.setClickingTogglesState(true);
         rateModeButton.addListener(this);
         
@@ -215,16 +219,14 @@ public:
 
         rateFreeTextSlider->setBounds(x + width * 0.15f, y + height * 0.4f, width * 0.25f, height * 0.15f);
         rateSyncTextSlider->setBounds(x + width * 0.15f, y + height * 0.4f, width * 0.25f, height * 0.15f);
-        
         rateModeButton.setBounds(x + width * 0.4f, y + height * 0.4f, height * 0.15f, height * 0.15f);
         
         phaseLabel.setBounds(x + width * 0.55f, height * 0.4f, width * 0.25f, height * 0.15f);
         phaseTextSlider->setBounds(x + width * 0.75f, height * 0.4f, width * 0.25f, height * 0.15f);
 
+        ratioLabel.setBounds(x, y + height * 0.6f, width * 0.5, height * 0.15f);
+        ratioTextSlider->setBounds(x + width * 0.25f, y + height * 0.6f, width * 0.5, height * 0.15f);
 
-        ratioSlider.setBounds(x, y + height * 0.6f, width * 0.5, height * 0.1f);
-        ratioLabel.setBounds(x, y + height * 0.65f, width * 0.5, height * 0.15f);
-        
         
         for (int i = 0; i < 24; i++)
         {
@@ -233,8 +235,8 @@ public:
             colorPickerButton[i].setBounds(xPos, yPos, width * 0.1f, height * 0.1f);
         }
         
-        opacityLabel.setBounds(x + width * 0.5f, y + height * 0.65f, width * 0.5, height * 0.15f);
-        opacityTextSlider->setBounds(x + width * 0.75f, height * 0.65f, width * 0.25f, height * 0.15f);
+        opacityLabel.setBounds(x + width * 0.5f, y + height * 0.6f, width * 0.5, height * 0.15f);
+        opacityTextSlider->setBounds(x + width * 0.75f, height * 0.6f, width * 0.25f, height * 0.15f);
     }
     
     void buttonClicked(juce::Button* b) override
@@ -310,17 +312,17 @@ public:
 private:
     int index;
     bool state;
-    DialGraphics rateLAF { 0 }, ratioLAF { 1 };
+    DialGraphics rateLAF { 0 };
     std::array<ColorButtonGraphics, 24> colorButtonLAF;
     std::array<juce::TextButton, 24> colorPickerButton;
     
     juce::Slider rateFreeSlider,
-    rateSyncSlider,
-    ratioSlider;
+    rateSyncSlider;
 
     std::unique_ptr<EditableTextBoxSlider>
     rateFreeTextSlider,
     rateSyncTextSlider,
+    ratioTextSlider,
     phaseTextSlider,
     opacityTextSlider;
     
@@ -332,7 +334,6 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
     rateFreeAttachment,
     rateSyncAttachment,
-    ratioAttachment,
     phaseAttachment,
     colorPickerAttachment,
     opacityAttachment;

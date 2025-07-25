@@ -156,7 +156,7 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
         midiProcessor.setSpinnerValues(i,
                                        state[i],
                                        rotation[i].getPhase(), // real time rotation
-                                       division[i],
+                                       ratio[i],
                                        opacity[i]);
         
         phases[i] = rotation[i].getPhase(); // for atomic
@@ -271,9 +271,6 @@ TingeAudioProcessor::createParameterLayout()
 
         layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID { rateSyncID, 1},
                                                                 rateSyncName, juce::StringArray {
-            "1/12",     // 32nd triplet
-            "1/8",      // 32nd
-            "1/6",      // 16th triplet
             "1/4",      // 16th
             "1/3",      // 8th triplet
             "3/8",      // 16th dotted
@@ -313,10 +310,7 @@ TingeAudioProcessor::createParameterLayout()
             "-3/8",     // Reverse 16th dotted
             "-1/3",     // Reverse 8th triplet
             "-1/4",     // Reverse 16th
-            "-1/6",     // Reverse 16th triplet
-            "-1/8",     // Reverse 32nd
-            "-1/12"     // Reverse 32nd triplet
-        }, 22));
+        }, 19));
         
         juce::String rateModeID = "rateMode" + juce::String(rotation);
         juce::String rateModeName = "Rate Mode " + juce::String(rotation);
@@ -326,11 +320,11 @@ TingeAudioProcessor::createParameterLayout()
                                                                true));
 
         
-        juce::String divisionID = "division" + juce::String(rotation);
-        juce::String DivisionName = "Division " + juce::String(rotation);
+        juce::String ratioID = "ratio" + juce::String(rotation);
+        juce::String ratioName = "Ratio " + juce::String(rotation);
 
-        layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { divisionID, 1},
-                                                               DivisionName,
+        layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { ratioID, 1},
+                                                               ratioName,
                                                                juce::NormalisableRange<float> { 1.0f, 5.0f, 0.01 }, 0.0f));
 
         juce::String phaseID = "phase" + juce::String(rotation);

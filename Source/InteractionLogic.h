@@ -6,12 +6,13 @@ class Interaction // this class is meant for both DSP and Graphics maybe
 {
 public:
 
-    std::array<float, 16> getRotationAngles(float phase, int division)
+    std::array<float, 16> getRotationAngles(float phase, int ratio)
     {
         std::array<float, 16> outputAngles = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-        if (division < 0) return outputAngles;
         
-        int numSegments = division * 2;
+        if (ratio <= 0 || ratio > 5) { return outputAngles; }
+        
+        int numSegments = ratio * 2;
         float segmentSize = 1.0f/numSegments;
         
         outputAngles[0] = fmodf(phase, 1.0f);
@@ -24,7 +25,7 @@ public:
         return outputAngles;
     }
     
-    std::array<float, 16> getInteraction(std::array<float, 16> angles, std::array<float, 16> &thresholdAngles, int division)
+    std::array<float, 16> getInteraction(std::array<float, 16> angles, std::array<float, 16> &thresholdAngles, int ratio)
     {
         std::array<float, 16> thresholdBools;
         for (int i = 0; i < thresholdBools.size(); i++)
@@ -32,7 +33,7 @@ public:
             thresholdBools[i] = 0.0f;
         }
 
-        for (int i = 0; i < division * 2 - 1; i++) {
+        for (int i = 0; i < ratio * 2 - 1; i++) {
             if (i % 2 == 0) {
                 for (int j = 0; j < 6; j++) {
                     if (isOverThreshold(thresholdAngles[j], angles[i], angles[i + 1]))
@@ -68,7 +69,7 @@ public:
         {
             rotationValue[index].threshold = getInteraction(rotationValue[index].angles,
                                                             thresholdAngles,
-                                                            rotationValue[index].division);
+                                                            rotationValue[index].ratio);
             
         }
     }
@@ -77,7 +78,7 @@ public:
     {
         for (int index = 0; index < 3; index++)
         {
-            rotationValue[index].angles = getRotationAngles(rotationValue[index].phase, rotationValue[index].division);
+            rotationValue[index].angles = getRotationAngles(rotationValue[index].phase, rotationValue[index].ratio);
         }
     }
     
@@ -143,14 +144,16 @@ public:
             
         } else if (overlap == 6) {
             triggerCondition = (A || B || C);
+            
         }
+        
         return triggerCondition;
     }
 
     
 
     // eventually three of these per rotation
-    int numThresholds;
+    int numThresholds = 0;
     
     std::array<float, 32> angles;
     
@@ -158,7 +161,7 @@ public:
     {
         bool state = true;
         float phase = 0.0f;
-        float division = 1;
+        float ratio = 1;
         std::array<float, 16> angles;
         std::array<float, 16> threshold;
         

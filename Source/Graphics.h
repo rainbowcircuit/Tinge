@@ -63,14 +63,14 @@ public:
         float width = rotationValue[index].bounds.getWidth();
         float height = rotationValue[index].bounds.getHeight();
         
-        int division = rotationValue[index].division;
-        if (division < 0) { division = 1; }
+        int ratio = rotationValue[index].ratio;
+        if (ratio < 0) { ratio = 1; }
         
         float twopi = juce::MathConstants<float>::twoPi;
         float radius = width/2;
         
         juce::Path wheelPath;
-        for(int i = 0; i < division * 2 - 1; i+= 2){
+        for(int i = 0; i < ratio * 2 - 1; i+= 2){
             
             float startAngle = rotationValue[index].angles[i] * twopi;
             float endAngle = rotationValue[index].angles[i + 1] * twopi;
@@ -127,19 +127,8 @@ public:
     SpinnerGraphics()
     {
         
-        hoverYOffsetSmooth[0].reset(10);
-        hoverYOffsetSmooth[1].reset(10);
-        hoverYOffsetSmooth[2].reset(10);
     }
     
-    void setColors(){
-        p.setColors(rotationValue[0].colorIndex,
-                    rotationValue[1].colorIndex,
-                    rotationValue[2].colorIndex,
-                    rotationValue[0].opacity,
-                    rotationValue[1].opacity,
-                    rotationValue[2].opacity);
-    }
                    
     void paint(juce::Graphics& g) override
     {
@@ -168,8 +157,8 @@ public:
         float y = bounds.getY();
         float sumYScale = animationValue * bounds.getHeight() * 0.25f;
         float sumYOffset = (1.0f - animationValue) * bounds.getHeight() * 0.45f;
-
-    //    drawThreshold(g, x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
+        
+        drawThreshold(g, x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
         
         
         // single wheel
@@ -224,14 +213,13 @@ public:
         float twopi = juce::MathConstants<float>::twoPi;
         float pi = juce::MathConstants<float>::pi;
 
-        float innerRadius = width * 0.15f;
-        float outerRadius = width * 0.45f;
+        float innerRadius = width * 0.5f;
+        float outerRadius = width * 0.55f;
         
         for (int i = 0; i < numThresholds; i++)
         {
-            float angleOffset = fmodf(thresholdAngles[i] - pi - 0.1, 1.0f);
-            if (numThresholds != 0){
-                
+            if (numThresholds > 0 && numThresholds <= 16){
+                float angleOffset = fmodf(thresholdAngles[i] - pi - 0.1, 1.0f);
                 float cos = std::cos(angleOffset * twopi);
                 float sin = std::sin(angleOffset * twopi);
 
@@ -244,22 +232,19 @@ public:
                 juce::Path graphicPath;
                 graphicPath.startNewSubPath(thresholdStart.x, thresholdStart.y);
                 graphicPath.lineTo(thresholdEnd.x, thresholdEnd.y);
-                g.setColour(juce::Colour(40, 40, 40));
-                
+                graphicPath.lineTo(thresholdEnd.x, thresholdEnd.y - 10.0f);
+                graphicPath.lineTo(thresholdStart.x, thresholdStart.y - 10.0f);
+
                 bool triggerCondition = getTriggerCondition(i, overlapIndex);
                 
-                if (triggerCondition){
-                    juce::Colour myColour = juce::Colour(255, 255, 255);
-                    g.setColour(myColour);
-                }
-                
-                juce::PathStrokeType strokeType(2.0f, juce::PathStrokeType::curved, juce::PathStrokeType::rounded);
-                g.strokePath(graphicPath, strokeType);
+                float alpha = triggerCondition ? 0.875f : 0.25f;
+                g.setColour(Colors::graphicWhite.withAlpha((float)alpha));
+                g.fillPath(graphicPath);
+                g.strokePath(graphicPath, juce::PathStrokeType(2.0f));
             }
         }
     }
 
-    
     void setAnimation(float value)
     {
         animationValue = value;
@@ -271,13 +256,20 @@ public:
         setWheelPosition();
     }
     
-    void setParams(int index, int divisionValue, bool stateValue, int colorIndexValue, float opacityValue)
+    void setParams(int index, int ratio, bool state, int colorIndex, float opacity)
     {
-        rotationValue[index].division = divisionValue;
-        rotationValue[index].state = stateValue;
-        rotationValue[index].colorIndex = colorIndexValue;
-        rotationValue[index].opacity = opacityValue;
-        setColors();
+        rotationValue[index].ratio = ratio;
+        rotationValue[index].state = state;
+        rotationValue[index].colorIndex = colorIndex;
+        rotationValue[index].opacity = opacity;
+        
+        p.setColors(rotationValue[0].colorIndex,
+                    rotationValue[1].colorIndex,
+                    rotationValue[2].colorIndex,
+                    rotationValue[0].opacity,
+                    rotationValue[1].opacity,
+                    rotationValue[2].opacity);
+
         repaint();
     }
     
@@ -286,34 +278,6 @@ public:
         rotationValue[index].phase = phaseValue;
         repaint();
     }
-    
-    void setHover(int hoverIndex)
-    {
-        this->hoverIndex = hoverIndex;
-        auto height = getLocalBounds().toFloat().getHeight();
-        
-        if (hoverIndex == 0) { // top selected
-            hoverYOffsetSmooth[0].setTargetValue(height * 0.1f);
-            hoverYOffsetSmooth[1].setTargetValue(height * 0.3f);
-            hoverYOffsetSmooth[2].setTargetValue(height * 0.4f);
-
-        } else if (hoverIndex == 1) { // middle selected
-            hoverYOffsetSmooth[0].setTargetValue(height * 0.0f);
-            hoverYOffsetSmooth[1].setTargetValue(height * 0.2f);
-            hoverYOffsetSmooth[2].setTargetValue(height * 0.4f);
-
-        } else if (hoverIndex == 2) {
-            hoverYOffsetSmooth[0].setTargetValue(height * 0.0f);
-            hoverYOffsetSmooth[1].setTargetValue(height * 0.1f);
-            hoverYOffsetSmooth[2].setTargetValue(height * 0.3f);
-            
-        } else { // no hover
-            hoverYOffsetSmooth[0].setTargetValue(height * 0.1f);
-            hoverYOffsetSmooth[1].setTargetValue(height * 0.2f);
-            hoverYOffsetSmooth[2].setTargetValue(height * 0.3f);
-        }
-    }
-    
     
     void setAnimationValue(float animationValue)
     {
@@ -325,16 +289,15 @@ public:
         auto bounds = getLocalBounds().toFloat();
         float wheelWidth = bounds.getWidth() * 0.75f;
         float wheelMargin = bounds.getWidth() * 0.125f;
+        float height = bounds.getHeight();
         float x = bounds.getX();
         float y = bounds.getY();
         
         float yOffset = animationValue * bounds.getHeight() * 2.0f;
         
-        rotationValue[0].bounds.setBounds(x + wheelMargin, y + hoverYOffsetSmooth[0].getNextValue() - yOffset,
-                                          
-                                          wheelWidth, wheelWidth);
-        rotationValue[1].bounds.setBounds(x + wheelMargin, y + hoverYOffsetSmooth[1].getNextValue() - yOffset, wheelWidth, wheelWidth);
-        rotationValue[2].bounds.setBounds(x + wheelMargin, y + hoverYOffsetSmooth[2].getNextValue() - yOffset, wheelWidth, wheelWidth);
+        rotationValue[0].bounds.setBounds(x + wheelMargin, y - yOffset, wheelWidth, wheelWidth);
+        rotationValue[1].bounds.setBounds(x + wheelMargin, y + height * 0.075f - yOffset, wheelWidth, wheelWidth);
+        rotationValue[2].bounds.setBounds(x + wheelMargin, y + height * 0.15f - yOffset, wheelWidth, wheelWidth);
 
         float sumYScale = animationValue * bounds.getHeight() * 0.25f;
         float sumYOffset = (1.0f - animationValue) * bounds.getHeight() * 0.45f;
@@ -353,14 +316,14 @@ public:
         float width = isSum ? rotationValue[index].sumBounds.getWidth() : rotationValue[index].bounds.getWidth();
         float height = isSum ? rotationValue[index].sumBounds.getHeight() : rotationValue[index].bounds.getHeight();
                 
-        int division = rotationValue[index].division;
-        if (division < 0) { division = 1; }
+        int ratio = rotationValue[index].ratio;
+        if (ratio < 0) { ratio = 1; }
         
         float twopi = juce::MathConstants<float>::twoPi;
         float radius = width/2;
         
         juce::Path wheelPath;
-        for(int i = 0; i < division * 2 - 1; i+= 2){
+        for(int i = 0; i < ratio * 2 - 1; i+= 2){
             
             float startAngle = rotationValue[index].angles[i] * twopi;
             float endAngle = rotationValue[index].angles[i + 1] * twopi;
@@ -384,9 +347,6 @@ public:
 
 private:
     juce::Colour colorA, colorB, colorC, colorAB, colorBC, colorAC, colorABC;
-    int hoverIndex = -1; //
-    std::array<float, 3> hoverYOffset;
-    std::array<juce::SmoothedValue<float>, 3> hoverYOffsetSmooth;
     
     int overlapIndex;
     float animationValue;
