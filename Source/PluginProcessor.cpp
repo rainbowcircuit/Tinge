@@ -20,10 +20,21 @@ TingeAudioProcessor::TingeAudioProcessor()
                        )
 #endif
 {
+    initializeParameters();
+    auto params = this->getParameters();
+    for (auto param : params)
+    {
+        param->addListener(this);
+    }
 }
 
 TingeAudioProcessor::~TingeAudioProcessor()
 {
+    auto params = this->getParameters();
+    for (auto param : params)
+    {
+        param->removeListener(this);
+    }
 }
 
 //==============================================================================
@@ -249,6 +260,7 @@ TingeAudioProcessor::createParameterLayout()
     
     std::array<float, 3> phaseDefaults = { 0.0f, 33.0f, 66.0f };
     std::array<int, 3> colorIndexDefaults = { 0, 7, 15 };
+    std::array<bool, 3> stateDefaults = { false, false, true };
 
     for(int rotation = 0; rotation < 3; rotation++)
     {
@@ -257,7 +269,7 @@ TingeAudioProcessor::createParameterLayout()
         
         layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID { stateID, 1},
                                                                stateName,
-                                                               true));
+                                                              stateDefaults[rotation]));
 
         juce::String rateFreeID = "rateFree" + juce::String(rotation);
         juce::String rateFreeName = "Rate Free " + juce::String(rotation);
@@ -271,45 +283,45 @@ TingeAudioProcessor::createParameterLayout()
 
         layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID { rateSyncID, 1},
                                                                 rateSyncName, juce::StringArray {
-            "1/4",      // 16th
-            "1/3",      // 8th triplet
-            "3/8",      // 16th dotted
-            "1/2",      // 8th
-            "2/3",      // quarter triplet
-            "3/4",      // 8th dotted
-            "1",        // quarter
-            "4/3",      // half triplet
-            "3/2",      // quarter dotted
-            "2",        // half
-            "8/3",      // whole triplet
-            "3",        // half dotted
-            "4",        // whole
-            "16/3",     // 2 bar triplet
-            "6",        // whole dotted
-            "8",        // 2 bars
-            "12",       // 2 bar dotted
-            "16",       // 4 bars
-            "32",       // 8 bars
+            "-1/4",      // 16th
+            "-1/3",      // 8th triplet
+            "-3/8",      // 16th dotted
+            "-1/2",      // 8th
+            "-2/3",      // quarter triplet
+            "-3/4",      // 8th dotted
+            "-1",        // quarter
+            "-4/3",      // half triplet
+            "-3/2",      // quarter dotted
+            "-2",        // half
+            "-8/3",      // whole triplet
+            "-3",        // half dotted
+            "-4",        // whole
+            "-16/3",     // 2 bar triplet
+            "-6",        // whole dotted
+            "-8",        // 2 bars
+            "-12",       // 2 bar dotted
+            "-16",       // 4 bars
+            "-32",       // 8 bars
             "0",        // static
-            "-32",      // Reverse 8 bars
-            "-16",      // Reverse 4 bars
-            "-12",      // Reverse 2 bar dotted
-            "-8",       // Reverse 2 bars
-            "-6",       // Reverse whole dotted
-            "-16/3",    // Reverse 2 bar triplet
-            "-4",       // Reverse whole
-            "-3",       // Reverse half dotted
-            "-8/3",     // Reverse whole triplet
-            "-2",       // Reverse half
-            "-3/2",     // Reverse quarter dotted
-            "-4/3",     // Reverse half triplet
-            "-1",       // Reverse quarter
-            "-3/4",     // Reverse 8th dotted
-            "-2/3",     // Reverse quarter triplet
-            "-1/2",     // Reverse 8th
-            "-3/8",     // Reverse 16th dotted
-            "-1/3",     // Reverse 8th triplet
-            "-1/4",     // Reverse 16th
+            "32",      // Reverse 8 bars
+            "16",      // Reverse 4 bars
+            "12",      // Reverse 2 bar dotted
+            "8",       // Reverse 2 bars
+            "6",       // Reverse whole dotted
+            "16/3",    // Reverse 2 bar triplet
+            "4",       // Reverse whole
+            "3",       // Reverse half dotted
+            "8/3",     // Reverse whole triplet
+            "2",       // Reverse half
+            "3/2",     // Reverse quarter dotted
+            "4/3",     // Reverse half triplet
+            "1",       // Reverse quarter
+            "3/4",     // Reverse 8th dotted
+            "2/3",     // Reverse quarter triplet
+            "1/2",     // Reverse 8th
+            "3/8",     // Reverse 16th dotted
+            "1/3",     // Reverse 8th triplet
+            "1/4",     // Reverse 16th
         }, 19));
         
         juce::String rateModeID = "rateMode" + juce::String(rotation);

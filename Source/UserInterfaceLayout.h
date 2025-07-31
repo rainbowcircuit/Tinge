@@ -15,7 +15,6 @@ public:
         nudgeStrengthSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
         nudgeStrengthSlider.setLookAndFeel(&nudgeStrengthLAF);
         
-        
         setLabel(nudgeLabel, "Nudge", juce::Justification::centred);
         
         addAndMakeVisible(nudgeForwardButton);
@@ -155,7 +154,7 @@ public:
         rateSyncTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, "rateSync" + juce::String(index), "");
         addAndMakeVisible(*rateSyncTextSlider);
         rateSyncTextSlider->setFontSize(12.0f);
-        rateSyncTextSlider->setSliderMode(true, false);
+     //   rateSyncTextSlider->setSliderMode(true, false);
         rateSyncTextSlider->setVisible(false);
 
         ratioTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, "ratio" + juce::String(index), ":1");

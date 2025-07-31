@@ -287,7 +287,7 @@ private:
     int colorButtonIndex = 0;
 };
 
-class EditableTextBoxSlider : public juce::Component , juce::AudioProcessorParameter::Listener, juce::AsyncUpdater, juce::Label::Listener
+class EditableTextBoxSlider : public juce::Component, juce::Timer, juce::AudioProcessorParameter::Listener, juce::AsyncUpdater, juce::Label::Listener
 {
 public:
     EditableTextBoxSlider(TingeAudioProcessor& p, juce::String parameterID, juce::String parameterSuffix) : audioProcessor(p)
@@ -301,7 +301,7 @@ public:
         
         // initialize displayed value
         auto value = audioProcessor.apvts.getRawParameterValue(parameterID)->load();
-        juce::String formattedValue = juce::String(value, 2) + parameterSuffix;
+        juce::String formattedValue = juce::String(value, numDecimals) + parameterSuffix;
         textBox.setText(formattedValue, juce::dontSendNotification);
         textBox.addListener(this);
         
@@ -315,6 +315,9 @@ public:
         for (auto param : params){
             param->addListener(this);
         }
+        
+        // start timer
+        startTimerHz(30);
     }
     
     ~EditableTextBoxSlider()
@@ -325,12 +328,6 @@ public:
         }
     }
     
-    void setSliderMode(bool displayChoice, bool sliderIsTime)
-    {
-        this->displayChoice = displayChoice;
-        this->sliderIsTime = sliderIsTime;
-    }
-    
     void paint(juce::Graphics& g) override {}
     
     void resized() override {
@@ -338,20 +335,23 @@ public:
         textBox.setBounds(bounds);
         
     }
-    
+        
     void mouseDown(const juce::MouseEvent& m) override
     {
         auto mousePoint = m.getPosition().toFloat();
         dragStartPoint.y = mousePoint.y;
+        
+        initialParamValue = audioProcessor.apvts.getParameter(parameterID)->getValue();
     }
 
     void mouseDrag(const juce::MouseEvent& m) override
     {
         auto mousePoint = m.getPosition().toFloat();
-        float deltaY = std::abs(mousePoint.y - dragStartPoint.y);
-
-        float value = juce::jlimit(0.0f, 1.0f, deltaY/100.0f); // clamp this
-        textValueToParamValue(value);
+        float deltaY = mousePoint.y - dragStartPoint.y;
+        
+        float sensitivity = 0.005f;
+        float newValue = juce::jlimit(0.0f, 1.0f, initialParamValue + (-deltaY * sensitivity));
+        textValueToParamValue(newValue);
     }
     
     void mouseUp(const juce::MouseEvent& m) override
@@ -373,7 +373,7 @@ public:
         auto value = l->getText().getFloatValue();
         float valueLimited = juce::jlimit(rangeStart, rangeEnd, value);
         
-        l->setText(juce::String(valueLimited, 2), juce::dontSendNotification);
+        l->setText(juce::String(valueLimited, numDecimals), juce::dontSendNotification);
         textBox.setInterceptsMouseClicks(false, false);
         
         float normalized = (valueLimited - rangeStart) / (rangeEnd - rangeStart);
@@ -401,7 +401,6 @@ public:
         float newValue = newValueAtomic.load();
         int parameterIndex = parameterIndexAtomic.load();
         juce::String newParameterID;
-        juce::StringArray choiceValue;
         float scaledValue;
         
         if (auto* param = dynamic_cast<juce::AudioProcessorParameterWithID*>(audioProcessor.getParameters()[parameterIndex]))
@@ -409,19 +408,13 @@ public:
             if (auto* rangedParam = dynamic_cast<juce::RangedAudioParameter*>(param))
             {
                 scaledValue = rangedParam->convertFrom0to1(newValue);
-                choiceValue = rangedParam->getAllValueStrings();
                 newParameterID = param->paramID;
             }
         }
         
         if (newParameterID == parameterID)
         {
-            juce::String formattedValue = juce::String(scaledValue, 2) + parameterSuffix;
-            if (displayChoice)
-            {
-                formattedValue = choiceValue[scaledValue];
-            }
-
+            juce::String formattedValue = juce::String(scaledValue, numDecimals) + parameterSuffix;
             textBox.setText(formattedValue, juce::dontSendNotification);
         }
     }
@@ -431,15 +424,31 @@ public:
         textBox.setFont(juce::FontOptions(size, juce::Font::plain));
     }
     
+    void setNumDecimals(int numDecimals)
+    {
+        this->numDecimals = numDecimals;
+    }
+    
+    void timerCallback() override
+    {
+        auto bounds = getLocalBounds().toFloat();
+        auto mouse = getMouseXYRelative().toFloat();
+        if (bounds.contains(mouse))
+        {
+            setMouseCursor(juce::MouseCursor::UpDownResizeCursor);
+        }
+    }
+    
 private:
+    float initialParamValue;
     float rangeStart, rangeEnd;
     std::atomic<float> newValueAtomic;
     std::atomic<int> parameterIndexAtomic;
     
     juce::Point<float> dragStartPoint;
     juce::Label textBox;
+    int numDecimals = 1;
     juce::String parameterID, parameterSuffix = "";
-    bool displayChoice, sliderIsTime;
     
     TingeAudioProcessor& audioProcessor;
 };

@@ -21,27 +21,34 @@ public:
             float angle = fmodf((segmentSize * i + phase), 1.0f);
             outputAngles[i] = angle;
         }
-
+        
         return outputAngles;
     }
     
-    std::array<float, 16> getInteraction(std::array<float, 16> angles, std::array<float, 16> &thresholdAngles, int ratio)
+    std::array<bool, 16> getInteraction(std::array<float, 16> angles, std::array<float, 16> &thresholdAngles, int ratio)
     {
-        std::array<float, 16> thresholdBools;
-        for (int i = 0; i < thresholdBools.size(); i++)
+        std::array<bool, 16> thresholdBool;
+        for (int i = 0; i < thresholdBool.size(); i++)
         {
-            thresholdBools[i] = 0.0f;
+            thresholdBool[i] = false;
         }
 
         for (int i = 0; i < ratio * 2 - 1; i++) {
             if (i % 2 == 0) {
-                for (int j = 0; j < 6; j++) {
-                    if (isOverThreshold(thresholdAngles[j], angles[i], angles[i + 1]))
-                        thresholdBools[j] = 1.0f;
+                for (int j = 0; j < numThresholds; j++) {
+                    bool overThreshold = isOverThreshold(thresholdAngles[j],
+                                                           angles[i],
+                                                           angles[i + 1]);
+                    
+                    if (overThreshold){
+                        thresholdBool[j] = true;
+                    } else {
+                        thresholdBool[j] = false;
+                    }
                 }
             }
         }
-        return thresholdBools;
+        return thresholdBool;
     }
     
     bool isOverThreshold(float value, float start, float end) {
@@ -58,9 +65,8 @@ public:
         if (numThresholds == 0)
             return;
         
-        // find the default angles of thresholds
-        for (int i = 0; i < 16; i++){
-            float thresholdIncr = 1.0f/numThresholds;
+        float thresholdIncr = 1.0f/numThresholds;
+        for (int i = 0; i < numThresholds; i++){
             thresholdAngles[i] = thresholdIncr * i;
         }
         
@@ -79,6 +85,7 @@ public:
         for (int index = 0; index < 3; index++)
         {
             rotationValue[index].angles = getRotationAngles(rotationValue[index].phase, rotationValue[index].ratio);
+            
         }
     }
     
@@ -103,51 +110,26 @@ public:
         bool B = rotationValue[1].threshold[i] > 0.0f && rotationValue[1].state;
         bool C = rotationValue[2].threshold[i] > 0.0f && rotationValue[2].state;
         
-        bool triggerCondition = (A || B || C);
-        if (overlap == 0)
-        {
-            triggerCondition =
-            (A && !B && !C) ||
-            (!A && B && !C) ||
-            (!A && !B && C);
-            
-        } else if (overlap == 1) {
-            triggerCondition =
-            (A && B && !C) ||
-            (!A && B && C) ||
-            (A && !B && C);
-            
-        } else if (overlap == 2) {
-            triggerCondition =
-            (A && B && C);
-            
-        } else if (overlap == 3) {
-            triggerCondition =
-            (A && !B && !C) ||
-            (!A && B && !C) ||
-            (!A && !B && C) ||
-            (A && B && !C) ||
-            (!A && B && C) ||
-            (A && !B && C);
+        bool onlyA  =  A && !B && !C;
+        bool onlyB  = !A &&  B && !C;
+        bool onlyC  = !A && !B &&  C;
 
-        } else if (overlap == 4) {
-            triggerCondition = (A && !B && !C) ||
-            (!A && B && !C) ||
-            (!A && !B && C) ||
-            (A && B && C);
-            
-        } else if (overlap == 5) {
-            triggerCondition = (A && B && !C) ||
-            (!A && B && C) ||
-            (A && B && C) ||
-            (A && B && C);
-            
-        } else if (overlap == 6) {
-            triggerCondition = (A || B || C);
-            
+        bool onlyAB =  A &&  B && !C;
+        bool onlyBC = !A &&  B &&  C;
+        bool onlyAC =  A && !B &&  C;
+
+        bool allABC = A && B && C;
+        switch (overlap)
+        {
+            case 0: return onlyA || onlyB || onlyC;
+            case 1: return onlyAB || onlyBC || onlyAC;
+            case 2: return allABC;
+            case 3: return onlyA || onlyB || onlyC || onlyAB || onlyBC || onlyAC;
+            case 4: return onlyA || onlyB || onlyC || allABC;
+            case 5: return onlyAB || onlyBC || onlyAC || allABC;
+            case 6: return A || B || C; // everything
+            default: return A || B || C;
         }
-        
-        return triggerCondition;
     }
 
     
@@ -163,7 +145,7 @@ public:
         float phase = 0.0f;
         float ratio = 1;
         std::array<float, 16> angles;
-        std::array<float, 16> threshold;
+        std::array<bool, 16> threshold;
         
         //******* Graphics Code *******//
         juce::Rectangle<float> sumBounds;

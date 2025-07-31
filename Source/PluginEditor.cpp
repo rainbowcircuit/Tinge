@@ -50,12 +50,13 @@ TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, st
     offsetSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     offsetSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 40, 20);
     offsetSlider.setRange(0.0, 100.0);
-
+    
     initializeParameter();
     const auto params = audioProcessor.getParameters();
     for (auto param : params){
         param->addListener(this);
     }
+
     
     setSize (650, 450);
     startTimerHz(60);
@@ -139,6 +140,33 @@ void TingeAudioProcessorEditor::timerCallback()
     spinnerGraphics.processAngles();
 }
 
+void TingeAudioProcessorEditor::initializeParameter()
+{
+    nudgeStrength = audioProcessor.apvts.getRawParameterValue(juce::String("nudgeStrength"))->load();
+    globalLayout->setLPGStrength(nudgeStrength);
+
+    
+    overlap = audioProcessor.apvts.getRawParameterValue(juce::String("overlap"))->load();
+    spinnerGraphics.setOverlapIndex(overlap);
+    overlapLAF.setColor(colorIndex[0], colorIndex[1], colorIndex[2], opacity[0], opacity[1], opacity[2]);
+    overlapSlider.repaint();
+
+    for (int index = 0 ; index < 3; index++){
+        auto incr = juce::String(index);
+        
+        ratio[index] = audioProcessor.apvts.getRawParameterValue(juce::String("ratio") + incr)->load();
+        state[index] = audioProcessor.apvts.getRawParameterValue(juce::String("state") + incr)->load();
+        opacity[index] = audioProcessor.apvts.getRawParameterValue(juce::String("opacity") + incr)->load();
+        colorIndex[index] = audioProcessor.apvts.getRawParameterValue(juce::String("colorIndex") + incr)->load();
+
+        spinnerGraphics.setParams(index, ratio[index], state[index], colorIndex[index], opacity[index]);
+        
+    }
+
+}
+
+
+
 void TingeAudioProcessorEditor::parameterValueChanged (int parameterIndex, float newValue)
 {
     juce::String newParameterID;
@@ -172,30 +200,5 @@ void TingeAudioProcessorEditor::parameterValueChanged (int parameterIndex, float
     spinnerGraphics.setOverlapIndex(overlap);
     overlapLAF.setColor(colorIndex[0], colorIndex[1], colorIndex[2], opacity[0], opacity[1], opacity[2]);
     overlapSlider.repaint();
-}
-
-void TingeAudioProcessorEditor::initializeParameter()
-{
-    nudgeStrength = audioProcessor.apvts.getRawParameterValue(juce::String("nudgeStrength"))->load();
-    globalLayout->setLPGStrength(nudgeStrength);
-
-    
-    overlap = audioProcessor.apvts.getRawParameterValue(juce::String("overlap"))->load();
-    spinnerGraphics.setOverlapIndex(overlap);
-    overlapLAF.setColor(colorIndex[0], colorIndex[1], colorIndex[2], opacity[0], opacity[1], opacity[2]);
-    overlapSlider.repaint();
-
-    for (int index = 0 ; index < 3; index++){
-        auto incr = juce::String(index);
-        
-        ratio[index] = audioProcessor.apvts.getRawParameterValue(juce::String("ratio") + incr)->load();
-        state[index] = audioProcessor.apvts.getRawParameterValue(juce::String("state") + incr)->load();
-        opacity[index] = audioProcessor.apvts.getRawParameterValue(juce::String("opacity") + incr)->load();
-        colorIndex[index] = audioProcessor.apvts.getRawParameterValue(juce::String("colorIndex") + incr)->load();
-
-        spinnerGraphics.setParams(index, ratio[index], state[index], colorIndex[index], opacity[index]);
-        
-    }
-
 }
 

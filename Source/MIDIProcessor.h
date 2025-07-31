@@ -48,10 +48,14 @@ public:
         for (int i = 0; i < numThresholds; i++)
         {
             const bool triggerCondition = getTriggerCondition(i, overlap);
-            const float thresholdWeight = (rotationValue[0].threshold[i] * rotationValue[0].opacity +
-                                           rotationValue[1].threshold[i] * rotationValue[1].opacity +
-                                           rotationValue[2].threshold[i]) * rotationValue[2].opacity /3.0f;
-                        
+            
+            float weightA = ((float)rotationValue[0].threshold[i] * rotationValue[0].opacity);
+            float weightB = ((float)rotationValue[1].threshold[i] * rotationValue[1].opacity);
+            float weightC = ((float)rotationValue[2].threshold[i] * rotationValue[2].opacity);
+
+            float thresholdWeight = weightA + weightB + weightC;
+                     
+            
             int noteScaled = noteValue[i].noteNumber + (noteScale * thresholdWeight);
             const int currentNote = juce::jlimit(0, 127, noteScaled);
             
@@ -76,6 +80,8 @@ public:
                     noteValue[i].activeNoteNumber = currentNote;
                     
                 }
+
+                
                 int mpeChannel = i + 1;
                 midiBuffer.addEvent(juce::MidiMessage::controllerEvent(mpeChannel, 74, currentController), 0);
                 midiBuffer.addEvent(juce::MidiMessage::aftertouchChange(mpeChannel, currentNote, currentController), 0);
@@ -112,6 +118,8 @@ public:
         rotationValue[index].state = state;
         rotationValue[index].phase = phase;
         rotationValue[index].ratio = ratio;
+        rotationValue[index].opacity = opacity;
+
     }
     
     void setOverlap(int overlap)
@@ -151,6 +159,7 @@ public:
 
     void nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, int brake);
     void accumulate();
+    void reset(bool reset);
     float getPhase();
     bool getDirection();
     
@@ -163,49 +172,46 @@ private:
     int rateBPM = 0;
     float rateFree = 0.0f;
     bool rateMode = false;
-        
     std::array <double, 39> subdivisionMultiplier =
     {
-        8.0,
-        6.0,
-        5.3333333,
-        4.0,
-        3.0,
-        2.6666667,
-        2.0,
-        1.5,
-        1.3333333,
-        1.0,
-        0.75,
-        0.6666667,
-        0.5,
-        0.375,
-        0.3333333,
-        0.25,
-        0.1666667,
-        0.125,
-        0.0833333,
+        -8.0,
+        -6.0,
+        -5.3333333,
+        -4.0,
+        -3.0,
+        -2.6666667,
+        -2.0,
+        -1.5,
+        -1.3333333,
+        -1.0,
+        -0.75,
+        -0.6666667,
+        -0.5,
+        -0.375,
+        -0.3333333,
+        -0.25,
+        -0.1666667,
+        -0.125,
+        -0.0833333,
         0.0f,
-       -0.0833333,
-       -0.125,
-       -0.1666667,
-       -0.25,
-       -0.3333333,
-       -0.375,
-       -0.5,
-       -0.6666667,
-       -0.75,
-       -1.0,
-       -1.3333333,
-       -1.5,
-       -2.0,
-       -2.6666667,
-       -3.0,
-       -4.0,
-       -5.3333333,
-       -6.0,
-       -8.0 };
+        0.0833333,
+        0.125,
+        0.1666667,
+        0.25,
+        0.3333333,
+        0.375,
+        0.5,
+        0.6666667,
+        0.75,
+        1.0,
+        1.3333333,
+        1.5,
+        2.0,
+        2.6666667,
+        3.0,
+        4.0,
+        5.3333333,
+        6.0,
+        8.0 };
 };
-
-
 

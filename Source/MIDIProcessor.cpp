@@ -142,9 +142,9 @@ void Spinner::nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, in
     backwardLPG.setEnvelopeSlew(riseScaled, fallScaled);
     brakeLPG.setEnvelopeSlew(sampleRate/50.0f, sampleRate/50.0f);
 
-    forwardLPG.triggerEnvelope(nudgeForward);
-    backwardLPG.triggerEnvelope(nudgeBackward);
-    brakeLPG.triggerEnvelope(brake);
+    forwardLPG.triggerEnvelope((bool)nudgeForward);
+    backwardLPG.triggerEnvelope((bool)nudgeBackward);
+    brakeLPG.triggerEnvelope((bool)brake);
     
 }
 
@@ -177,8 +177,11 @@ void Spinner::accumulate()
 
 float Spinner::getPhase()
 {
-    float offset = phaseOffset/100.0f;
-    return fmodf(phase + offset, 1.0f);
+    float offset = phaseOffset / 100.0f;
+    float wrapped = fmodf(phase + offset, 1.0f);
+    if (wrapped < 0.0f)
+        wrapped += 1.0f;
+    return wrapped;
 }
 
 bool Spinner::getDirection()

@@ -21,6 +21,12 @@ public:
         lastGate = gate;
     }
     
+    void triggerEnvelope(float gateInput)
+    {
+        gate = gateInput;
+        lastGate = gate;
+    }
+    
     float generateEnvelope()
     {
         bool gateThreshold = gate >= 0.5f;

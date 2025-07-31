@@ -2,6 +2,7 @@
 #pragma once
 #include "InteractionLogic.h"
 #include "LookAndFeel.h"
+#include "DSP.h"
 
 class DrawHelper
 {
@@ -15,9 +16,6 @@ public:
     void drawDoubleOverlap(juce::Graphics& g, juce::Path& pathA, juce::Path& pathB, juce::Colour color)
     {
         g.saveState();
-    //    juce::AffineTransform yOffset = juce::AffineTransform::translation(0.0f, -7.0f);
-    //    pathA.applyTransform(yOffset);
-     //   pathB.applyTransform(yOffset);
         g.reduceClipRegion(pathA);
         g.reduceClipRegion(pathB);
         g.setColour(color);
@@ -28,10 +26,6 @@ public:
     void drawTripleOverlap(juce::Graphics& g, juce::Path& pathA, juce::Path& pathB, juce::Path& pathC, juce::Colour color)
     {
         g.saveState();
-    //    juce::AffineTransform yOffset = juce::AffineTransform::translation(0.0f, -14.0f);
-    //    pathA.applyTransform(yOffset);
-    //    pathB.applyTransform(yOffset);
-    //    pathC.applyTransform(yOffset);
         g.reduceClipRegion(pathA);
         g.reduceClipRegion(pathB);
         g.reduceClipRegion(pathC);
@@ -41,7 +35,7 @@ public:
         g.restoreState();
     }
 };
-
+/*
 class WheelGraphics : public juce::Component, public Interaction
 {
 public:
@@ -90,7 +84,6 @@ public:
         return wheelPath;
     }
 
-    //************ Mouse Interaction ************//
     
     bool isMouseOver(const juce::MouseEvent& m)
     {
@@ -119,27 +112,28 @@ private:
     float isometricSkew;
     float yOffset, yPosOffset;
 };
+*/
 
-
-class SpinnerGraphics : public juce::Component, public Interaction, public DrawHelper
+class SpinnerGraphics : public juce::Component, public Interaction, public DrawHelper, public juce::Timer
 {
 public:
     SpinnerGraphics()
     {
-        
+        thresholdSlew.setSampleRate(60);
+        thresholdSlew.setEnvelopeSlew(800, 800);
+        startTimerHz(60);
     }
     
                    
     void paint(juce::Graphics& g) override
     {
         setWheelPosition();
-
-
+        
         // summed wheel
-        auto sumA = generateWheelPath(g, 2, true);
+        auto sumA = generateWheelPath(g, 0, true);
         auto sumB = generateWheelPath(g, 1, true);
-        auto sumC = generateWheelPath(g, 0, true);
-
+        auto sumC = generateWheelPath(g, 2, true);
+        
         drawWithoutOverlap(g, sumC, colorC);
         drawWithoutOverlap(g, sumB, colorB);
         drawWithoutOverlap(g, sumA, colorA);
@@ -165,7 +159,7 @@ public:
         auto C = generateWheelPath(g, 2, false);
         auto B = generateWheelPath(g, 1, false);
         auto A = generateWheelPath(g, 0, false);
-
+        
         drawWithoutOverlap(g, A, p.colorA);
         drawWithoutOverlap(g, B, p.colorB);
         drawWithoutOverlap(g, C, p.colorC);
@@ -218,6 +212,13 @@ public:
         
         for (int i = 0; i < numThresholds; i++)
         {
+            float weightA = ((float)rotationValue[0].threshold[i] * rotationValue[0].opacity)/3.0f;
+            float weightB = ((float)rotationValue[1].threshold[i] * rotationValue[1].opacity)/3.0f;
+            float weightC = ((float)rotationValue[2].threshold[i] * rotationValue[2].opacity)/3.0f;
+            float thresholdWeight = (weightA + weightB + weightC);
+            thresholdSlew.triggerEnvelope(thresholdWeight);
+            
+            float thresholdHeight = thresholdSlew.generateEnvelope() * 40.0f;
             if (numThresholds > 0 && numThresholds <= 16){
                 float angleOffset = fmodf(thresholdAngles[i] - pi - 0.1, 1.0f);
                 float cos = std::cos(angleOffset * twopi);
@@ -232,8 +233,8 @@ public:
                 juce::Path graphicPath;
                 graphicPath.startNewSubPath(thresholdStart.x, thresholdStart.y);
                 graphicPath.lineTo(thresholdEnd.x, thresholdEnd.y);
-                graphicPath.lineTo(thresholdEnd.x, thresholdEnd.y - 10.0f);
-                graphicPath.lineTo(thresholdStart.x, thresholdStart.y - 10.0f);
+                graphicPath.lineTo(thresholdEnd.x, thresholdEnd.y - thresholdHeight);
+                graphicPath.lineTo(thresholdStart.x, thresholdStart.y - thresholdHeight);
 
                 bool triggerCondition = getTriggerCondition(i, overlapIndex);
                 
@@ -343,9 +344,19 @@ public:
         return wheelPath;
     }
 
+    void setThresholdSlew(float slewTime)
+    {
+        thresholdSlew.setEnvelopeSlew(slewTime, slewTime);
+    }
 
+    void timerCallback() override
+    {
+        repaint();
+    }
 
 private:
+    LowPassGate thresholdSlew;
+    
     juce::Colour colorA, colorB, colorC, colorAB, colorBC, colorAC, colorABC;
     
     int overlapIndex;
