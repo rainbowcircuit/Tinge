@@ -6,12 +6,12 @@ class Interaction // this class is meant for both DSP and Graphics maybe
 {
 public:
 
-    std::array<float, 16> getRotationAngles(float phase, int ratio)
+    std::array<float, 10> getRotationAngles(float phase, int ratio)
     {
-        std::array<float, 16> outputAngles = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-        
-        if (ratio <= 0 || ratio > 5) { return outputAngles; }
-        
+        std::array<float, 10> outputAngles;
+        for (int i = 0; i < outputAngles.size(); i++)
+            outputAngles[i] = 0.0f;
+
         int numSegments = ratio * 2;
         float segmentSize = 1.0f/numSegments;
         
@@ -25,11 +25,10 @@ public:
         return outputAngles;
     }
     
-    std::array<bool, 16> getInteraction(std::array<float, 16> angles, std::array<float, 16> &thresholdAngles, int ratio)
+    std::array<bool, 16> getInteraction(std::array<float, 10> angles, std::array<float, 16> &thresholdAngles, int ratio)
     {
         std::array<bool, 16> thresholdBool;
-        for (int i = 0; i < thresholdBool.size(); i++)
-        {
+        for (int i = 0; i < thresholdBool.size(); i++){
             thresholdBool[i] = false;
         }
 
@@ -39,12 +38,7 @@ public:
                     bool overThreshold = isOverThreshold(thresholdAngles[j],
                                                            angles[i],
                                                            angles[i + 1]);
-                    
-                    if (overThreshold){
-                        thresholdBool[j] = true;
-                    } else {
-                        thresholdBool[j] = false;
-                    }
+                    if (overThreshold){ thresholdBool[j] = true; }
                 }
             }
         }
@@ -84,7 +78,8 @@ public:
     {
         for (int index = 0; index < 3; index++)
         {
-            rotationValue[index].angles = getRotationAngles(rotationValue[index].phase, rotationValue[index].ratio);
+            rotationValue[index].angles = getRotationAngles(rotationValue[index].phase,
+                                                            rotationValue[index].ratio);
             
         }
     }
@@ -106,9 +101,9 @@ public:
 
     bool getTriggerCondition(int i, int overlap)
     {
-        bool A = rotationValue[0].threshold[i] > 0.0f && rotationValue[0].state;
-        bool B = rotationValue[1].threshold[i] > 0.0f && rotationValue[1].state;
-        bool C = rotationValue[2].threshold[i] > 0.0f && rotationValue[2].state;
+        bool A = rotationValue[0].threshold[i] && rotationValue[0].opacity >= 0.01f;
+        bool B = rotationValue[1].threshold[i] && rotationValue[1].opacity >= 0.01f;
+        bool C = rotationValue[2].threshold[i] && rotationValue[2].opacity >= 0.01f;
         
         bool onlyA  =  A && !B && !C;
         bool onlyB  = !A &&  B && !C;
@@ -141,10 +136,9 @@ public:
     
     struct RotationValue
     {
-        bool state = true;
         float phase = 0.0f;
         float ratio = 1;
-        std::array<float, 16> angles;
+        std::array<float, 10> angles;
         std::array<bool, 16> threshold;
         
         //******* Graphics Code *******//

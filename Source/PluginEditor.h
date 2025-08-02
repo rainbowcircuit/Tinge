@@ -47,7 +47,7 @@ public:
 private:
     float overlap, nudgeStrength;
     std::array<float, 3> rateFree, rateSync, phase, ratio, colorIndex, opacity;
-    std::array<bool, 3> state, rateMode;
+    std::array<bool, 3> rateMode;
     
     bool isoView = false;
     float animationValue;
@@ -55,7 +55,7 @@ private:
     
     juce::Animator isoEnterToggle = juce::ValueAnimatorBuilder {}
         .withEasing(juce::Easings::createEaseInOut())
-        .withDurationMs(1800.0f)
+        .withDurationMs(1200.0f)
         .withValueChangedCallback([this] (auto value){ // lambda function
             animationValue = 1.0f - value;
             repaint();
@@ -64,7 +64,7 @@ private:
     
     juce::Animator isoExitToggle = juce::ValueAnimatorBuilder {}
         .withEasing(juce::Easings::createEaseInOut())
-        .withDurationMs(1800.0f)
+        .withDurationMs(1200.0f)
         .withValueChangedCallback([this] (auto value){ // lambda function
             animationValue = value;
             repaint();

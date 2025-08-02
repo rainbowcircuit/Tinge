@@ -35,84 +35,7 @@ public:
         g.restoreState();
     }
 };
-/*
-class WheelGraphics : public juce::Component, public Interaction
-{
-public:
-    void setWheelPosition(int index, int x, int y, int width, int height)
-    {
-        this->index = index;
-        rotationValue[index].bounds.setBounds(x, y, width, height);
-    }
-        
-    void setAnimationValue(float animationValue)
-    {
-        this->animationValue = animationValue;
-    }
-    
-    juce::Path generateWheelPath(juce::Graphics& g)
-    {
-        float x = rotationValue[index].bounds.getX();
-        float y = rotationValue[index].bounds.getY();
-        float width = rotationValue[index].bounds.getWidth();
-        float height = rotationValue[index].bounds.getHeight();
-        
-        int ratio = rotationValue[index].ratio;
-        if (ratio < 0) { ratio = 1; }
-        
-        float twopi = juce::MathConstants<float>::twoPi;
-        float radius = width/2;
-        
-        juce::Path wheelPath;
-        for(int i = 0; i < ratio * 2 - 1; i+= 2){
-            
-            float startAngle = rotationValue[index].angles[i] * twopi;
-            float endAngle = rotationValue[index].angles[i + 1] * twopi;
 
-            if (endAngle <= startAngle)
-                endAngle += twopi;
-            if (i % 2 == 0){
-                
-                wheelPath.startNewSubPath(x + width/2, y + height/(isometricSkew)); // center
-                wheelPath.addCentredArc(x + width/2, y + height/(isometricSkew),
-                                        radius, radius/(isometricSkew),
-                                        0.0f, startAngle, endAngle);
-                wheelPath.closeSubPath();
-                wheelPath = wheelPath.createPathWithRoundedCorners(1);
-            }
-        }
-        return wheelPath;
-    }
-
-    
-    bool isMouseOver(const juce::MouseEvent& m)
-    {
-        auto mouse = m.getPosition().toFloat();
-        mouseOver = wheelPath.contains(mouse);
-        return mouseOver;
-    }
-    
-    void setInFocus(bool inFocus)
-    {
-        this->inFocus = inFocus;
-    }
-    
-    bool getInFocus()
-    {
-        return inFocus;
-    }
-
-
-private:
-    int index;
-    juce::Path wheelPath;
-    bool mouseOver, inFocus;
-    
-    float animationValue;
-    float isometricSkew;
-    float yOffset, yPosOffset;
-};
-*/
 
 class SpinnerGraphics : public juce::Component, public Interaction, public DrawHelper, public juce::Timer
 {
@@ -200,7 +123,17 @@ public:
         }
     }
     
-    
+    void drawGrid(juce::Graphics& g, int x, int y, int width, int height)
+    {
+        for (int i = 0; i < 10; i++){
+            for (int j = 0; j < 10; j++){
+                
+                
+                
+                
+            }
+        }
+    }
     
     void drawThreshold(juce::Graphics& g, int x, int y, int width, int height)
     {
@@ -257,10 +190,9 @@ public:
         setWheelPosition();
     }
     
-    void setParams(int index, int ratio, bool state, int colorIndex, float opacity)
+    void setParams(int index, int ratio, int colorIndex, float opacity)
     {
         rotationValue[index].ratio = ratio;
-        rotationValue[index].state = state;
         rotationValue[index].colorIndex = colorIndex;
         rotationValue[index].opacity = opacity;
         
@@ -338,7 +270,7 @@ public:
                                         radius, radius/(isometricSkew),
                                         0.0f, startAngle, endAngle);
                 wheelPath.closeSubPath();
-                wheelPath = wheelPath.createPathWithRoundedCorners(4);
+                wheelPath = wheelPath.createPathWithRoundedCorners(1);
             }
         }
         return wheelPath;

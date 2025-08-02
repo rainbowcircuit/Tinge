@@ -14,6 +14,188 @@
 #include "LookAndFeel.h"
 #include "Graphics.h"
 
+
+class DraftGraphics : public juce::LookAndFeel_V4, DrawHelper
+{
+public:
+    DraftGraphics(int index)
+    {
+        this->index = index;
+    }
+    
+    void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider) override
+    {
+        auto bounds = slider.getLocalBounds().toFloat();
+        bounds.reduce(5, 5);
+        float xPos = bounds.getX();
+        float yPos = bounds.getY();
+        float size = bounds.getWidth();
+        float graphicWidth = bounds.getWidth();
+        float graphicHeight = bounds.getHeight();
+        
+        if(index == 0){
+            drawRate(g, xPos, yPos, graphicWidth, graphicHeight, sliderPosProportional);
+            
+        } else if (index == 1){
+            drawRatio(g, xPos, yPos, size, sliderPosProportional);
+
+        } else if (index == 2){
+            drawOpacity(g, xPos, yPos, size, sliderPosProportional);
+
+        } else if (index == 3){
+            float position = sliderPosProportional * 6;
+            position = std::floor(position);
+            
+        } else if (index == 4){
+            
+        }
+    }
+    
+    void drawRate(juce::Graphics& g, float x, float y, float width, float height, float pos)
+    {
+        int domainResolution = 128;
+        float xIncr = width/domainResolution;
+        juce::Path sinMainPath, offsetLPath, offsetRPath;
+        
+        float twopi = juce::MathConstants<float>::twoPi;
+        sinMainPath.startNewSubPath(x, y + height/2);
+        offsetLPath.startNewSubPath(x, y + height/2);
+        offsetRPath.startNewSubPath(x, y + height/2);
+
+        float posBipolar = (std::abs(pos - 0.5f) * 2);
+        
+        for (int i = 1; i < domainResolution; i++)
+        {
+            int hannCenterPoint = domainResolution * pos;
+            int hannWidth = (1.0f - posBipolar) * 64 + 64;
+            int hannStartPoint = juce::jlimit(0, domainResolution, hannCenterPoint - hannWidth/2);
+            int hannEndPoint = juce::jlimit(0, domainResolution, hannCenterPoint +
+                                            hannWidth/2);
+
+            int hannLength = hannEndPoint - hannStartPoint;
+
+            float hann = 0.0f;
+            float phase = 0.0f;
+            
+            if (i > hannStartPoint && i < hannEndPoint){
+                int j = i - hannStartPoint;
+                hann = 0.5f * (1.0f - std::cos(twopi * j/hannLength));
+                
+                float frequency = (std::abs(pos - 0.5f) * 2) * 1.0f + 1.0f;
+                phase = (twopi * std::pow(frequency, 2) * j) / hannLength;
+            }
+            
+            float sin = std::sin(phase) * hann;
+            float sinOffset1 = std::sin(phase * (std::abs(pos - 0.5f) + 0.5f)) * hann;
+            float sinOffset2 = std::sin(phase * -(std::abs(pos - 0.5f) + 0.5f)) * hann;
+
+            float heightOffset = (height * 0.25f * (1.0f - posBipolar)) + (height * 0.25f);
+            
+            juce::Point<float> sinCoords = { x + xIncr * i, (y + height/2) + sin * heightOffset };
+            juce::Point<float> offsetLCoords = { sinCoords.x, (y + height/2) + sinOffset1 * heightOffset };
+            juce::Point<float> offsetRCoords = { sinCoords.x, (y + height/2) + sinOffset2 * heightOffset };
+
+            
+            sinMainPath.lineTo(sinCoords.x, sinCoords.y);
+            sinMainPath = sinMainPath.createPathWithRoundedCorners(3);
+            
+            offsetLPath.lineTo(offsetLCoords.x, offsetLCoords.y);
+            offsetLPath = offsetLPath.createPathWithRoundedCorners(3);
+
+            offsetRPath.lineTo(offsetRCoords.x, offsetRCoords.y);
+            offsetRPath = offsetRPath.createPathWithRoundedCorners(3);
+
+            g.setColour(juce::Colour(80, 80, 80));
+            g.strokePath(offsetLPath, juce::PathStrokeType(1.5f));
+            
+            g.setColour(juce::Colour(130, 130, 130));
+            g.strokePath(offsetRPath, juce::PathStrokeType(1.5f));
+            
+            g.setColour(juce::Colour(190, 190, 190));
+            g.strokePath(sinMainPath, juce::PathStrokeType(1.5f));
+                        
+        }
+        
+        
+        
+    }
+
+    void drawRatio(juce::Graphics& g, float x, float y, float size, float index)
+    {
+        juce::Path frontEndPath, frontPath, backPath;
+        juce::Point<float> centerCoords = { x + size * 0.5f, y + size * 0.75f };
+
+        int ratioIndex = index * 3.0f + 1.0f;
+        ratioIndex = 5 - std::round(ratioIndex);
+        
+        float startPoint = -1.57f;
+        for (int i = 1; i <= 4; i++)
+        {
+            int j = 5 - i;
+            float radius = (size * 0.4f/4) * i;
+            float endPoint = startPoint + 3.14f/j;
+            
+            backPath.addCentredArc(centerCoords.x, centerCoords.y,
+                                      radius, radius,
+                                      0.0f, startPoint, endPoint, true);
+            backPath.lineTo(centerCoords);
+            
+            g.setColour(juce::Colour(130 - (10 * i), 130 - (10 * i), 130 - (10 * i)));
+            
+            if (i == ratioIndex)
+            {
+                float frontRadius = size * 0.1f * ratioIndex;
+                float lineAngle = endPoint - 1.57f;
+
+                frontPath.addCentredArc(centerCoords.x, centerCoords.y,
+                                        frontRadius, frontRadius,
+                                        0.0f, startPoint, endPoint, true);
+
+                juce::Point<float> lineEndCoords = { centerCoords.x + std::cos(lineAngle) * size * 0.5f,
+                    centerCoords.y + std::sin(lineAngle) * size * 0.5f };
+
+                frontPath.startNewSubPath(centerCoords);
+                frontPath.lineTo(lineEndCoords);
+                
+                frontEndPath.addCentredArc(lineEndCoords.x, lineEndCoords.y, 2.0f, 2.0f, 0.0f, 0.0f, 6.28f);
+            }
+        }
+        
+        g.strokePath(backPath, juce::PathStrokeType(1.5f));
+
+        g.setColour(juce::Colour(190, 190, 190));
+        g.strokePath(frontPath, juce::PathStrokeType(1.5f));
+        g.fillPath(frontEndPath);
+
+    }
+
+    void drawOpacity(juce::Graphics& g, float x, float y, float size, float pos)
+    {
+
+        float radius = size * 0.25f;
+        float offset = (1.0f - pos) * radius;
+
+        juce::Path leftCircle, rightCircle;
+        juce::Point centerCoords = { x + size/2, y + size/2 };
+        
+        leftCircle.addCentredArc(centerCoords.x - offset, centerCoords.y, radius, radius, 0.0f, 0.0f, 6.28f, true);
+        rightCircle.addCentredArc(centerCoords.x + offset, centerCoords.y, radius, radius, 0.0f, 0.0f, 6.28f, true);
+        g.setColour(juce::Colour(190, 190, 190));
+        g.strokePath(leftCircle, juce::PathStrokeType(1.5f));
+        g.strokePath(rightCircle, juce::PathStrokeType(1.5f));
+
+        drawDoubleOverlap(g, leftCircle, rightCircle, juce::Colour(190, 190, 190));
+        
+    }
+    
+    int index;
+    juce::Colour iconShade = juce::Colour(190, 190, 190);
+    juce::Colour iconDisabled = juce::Colour(90, 90, 90);
+
+    
+};
+
+
 class DialGraphics : public juce::LookAndFeel_V4, DrawHelper
 {
 public:

@@ -52,17 +52,15 @@ public:
             float weightA = ((float)rotationValue[0].threshold[i] * rotationValue[0].opacity);
             float weightB = ((float)rotationValue[1].threshold[i] * rotationValue[1].opacity);
             float weightC = ((float)rotationValue[2].threshold[i] * rotationValue[2].opacity);
-
-            float thresholdWeight = weightA + weightB + weightC;
-                     
+            float thresholdWeight = (weightA + weightB + weightC)/3.0f;
             
             int noteScaled = noteValue[i].noteNumber + (noteScale * thresholdWeight);
             const int currentNote = juce::jlimit(0, 127, noteScaled);
             
-            int velocityScaled = noteValue[i].noteVelocity + (velocityScale * thresholdWeight);
+            int velocityScaled = noteValue[i].noteVelocity + (127 * thresholdWeight);
             const int currentVelocity = juce::jlimit(0, 127, velocityScaled);
             
-            int controllerScaled = (controllerScale * thresholdWeight);
+            int controllerScaled = (127 * thresholdWeight);
             const int currentController = juce::jlimit(0, 127, controllerScaled);
 
             if (triggerCondition)
@@ -80,7 +78,6 @@ public:
                     noteValue[i].activeNoteNumber = currentNote;
                     
                 }
-
                 
                 int mpeChannel = i + 1;
                 midiBuffer.addEvent(juce::MidiMessage::controllerEvent(mpeChannel, 74, currentController), 0);
@@ -113,9 +110,8 @@ public:
         }
     }
     
-    void setSpinnerValues(int index, bool state, float phase, float ratio, float opacity)
+    void setSpinnerValues(int index, float phase, float ratio, float opacity)
     {
-        rotationValue[index].state = state;
         rotationValue[index].phase = phase;
         rotationValue[index].ratio = ratio;
         rotationValue[index].opacity = opacity;
@@ -153,13 +149,14 @@ class Spinner
 public:
     void setSampleRate(double sampleRate);
     void reset();
-    
-    void setRate(int rateBPM, float rateFree, bool isSynced, float phaseOffset);
+    void resetMode(int resetMode, int numHeldNotes, bool manualReset);
+
+    void setRate(int rateBPM, float rateFree, bool isSynced, float phaseOffset, float rateScale);
     void tempo(juce::AudioPlayHead* playhead);
 
-    void nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, int brake);
+    void nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, float brakeStrength, int brake);
+
     void accumulate();
-    void reset(bool reset);
     float getPhase();
     bool getDirection();
     
@@ -167,11 +164,22 @@ public:
 private:
     LowPassGate forwardLPG, backwardLPG, brakeLPG;
     double sampleRate;
-    float phase = 0.0f, previousPhase = 0.0f, phaseOffset = 0.0f;
+    float phase = 0.0f, previousPhase = 0.0f, phaseOffset = 0.0f, rateScale = 1.0f;
     float bpm = 120.0f;
     int rateBPM = 0;
     float rateFree = 0.0f;
-    bool rateMode = false;
+    bool rateMode = false, holdAccum = false, manualReset = false, previousManualReset = false;
+    
+    std::array <double, 7> rateScaleMultiplier =
+    {
+        0.125,
+        0.25f,
+        0.5f,
+        1.0f,
+        2.0f,
+        4.0f,
+        8.0f };
+
     std::array <double, 39> subdivisionMultiplier =
     {
         -8.0,

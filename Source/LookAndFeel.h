@@ -12,8 +12,8 @@
 #include <JuceHeader.h>
 
 namespace Colors {
-    inline juce::Colour backgroundFill = { 180, 180, 180 };
-    inline juce::Colour backgroundFillAlt = { 42, 42, 42 };
+    inline juce::Colour backgroundFill = juce::Colour(34, 35, 36);
+    inline juce::Colour backgroundFillAlt = juce::Colour(34, 35, 36);
     inline juce::Colour graphicWhite = { 244, 244, 244 };
 
 inline juce::Array<juce::Colour> gradientColor = {
@@ -50,14 +50,29 @@ inline juce::Array<juce::Colour> gradientColor = {
 
 struct Palette
 {
-    juce::Colour addColors(const juce::Colour& color1, const juce::Colour& color2, const juce::Colour& color3)
+        
+    juce::Colour addColors(const juce::Colour& c1, const juce::Colour& c2, const juce::Colour& c3)
     {
-        auto r = juce::jlimit(0, 255, color1.getRed()   + color2.getRed() + color3.getRed());
-        auto g = juce::jlimit(0, 255, color1.getGreen() + color2.getGreen() + color3.getGreen());
-        auto b = juce::jlimit(0, 255, color1.getBlue()  + color2.getBlue() + color3.getBlue());
-        auto a = juce::jlimit(0, 255, color1.getAlpha() + color2.getAlpha() + color3.getAlpha());
+        float a1 = c1.getFloatAlpha();
+        float a2 = c2.getFloatAlpha();
+        float a3 = c3.getFloatAlpha();
 
-        return juce::Colour((juce::uint8)r, (juce::uint8)g, (juce::uint8)b, (juce::uint8)a);
+        float outAlpha = 1.0f - (1.0f - a1) * (1.0f - a2) * (1.0f - a3);
+
+        // Blend RGB with premultiplied alpha
+        float r = (c1.getFloatRed()   * a1 +
+                   c2.getFloatRed()   * a2 * (1.0f - a1) +
+                   c3.getFloatRed()   * a3 * (1.0f - a1) * (1.0f - a2)) / (outAlpha == 0.0f ? 1.0f : outAlpha);
+
+        float g = (c1.getFloatGreen() * a1 +
+                   c2.getFloatGreen() * a2 * (1.0f - a1) +
+                   c3.getFloatGreen() * a3 * (1.0f - a1) * (1.0f - a2)) / (outAlpha == 0.0f ? 1.0f : outAlpha);
+
+        float b = (c1.getFloatBlue()  * a1 +
+                   c2.getFloatBlue()  * a2 * (1.0f - a1) +
+                   c3.getFloatBlue()  * a3 * (1.0f - a1) * (1.0f - a2)) / (outAlpha == 0.0f ? 1.0f : outAlpha);
+
+        return juce::Colour::fromFloatRGBA(r, g, b, outAlpha);
     }
     
     juce::Colour addColors(juce::Colour& c1, juce::Colour& c2)
@@ -84,10 +99,10 @@ struct Palette
         colorA = Colors::gradientColor[colorAIndex].withAlpha((float)alphaA/3);
         colorB = Colors::gradientColor[colorBIndex].withAlpha((float)alphaB/3);
         colorC = Colors::gradientColor[colorCIndex].withAlpha((float)alphaC/3);
-        colorAB = addColors(colorA, colorB);
-        colorBC = addColors(colorB, colorC);
-        colorAC = addColors(colorA, colorC);
-        colorABC = addColors(colorA, colorB, colorC);
+        colorAB = addColors(colorA, colorB).withAlpha((float)0.51f);
+        colorBC = addColors(colorB, colorC).withAlpha((float)0.51f);
+        colorAC = addColors(colorA, colorC).withAlpha((float)0.51f);
+        colorABC = addColors(colorA, colorB, colorC).withAlpha((float)0.657f);
     }
     
     juce::Colour colorA;

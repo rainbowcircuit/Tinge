@@ -95,17 +95,34 @@ void Spinner::setSampleRate(double sampleRate)
 
 }
 
-void Spinner::setRate(int rateBPM, float rateFree, bool rateMode, float phaseOffset)
+void Spinner::setRate(int rateBPM, float rateFree, bool rateMode, float phaseOffset, float rateScale)
 {
     this->rateBPM = rateBPM;
     this->rateFree = rateFree;
     this->rateMode = rateMode;
     this->phaseOffset = phaseOffset;
+    this->rateScale = rateScale;
 }
 
 void Spinner::reset()
 {
-    phase = 0.0f;
+    phase = phaseOffset;
+}
+
+void Spinner::resetMode(int resetMode, int numHeldNotes, bool manualReset) // toggle, momentary
+{
+    if (manualReset && !previousManualReset)
+        reset();
+    
+    previousManualReset = manualReset;
+    
+    holdAccum = false;
+    if (resetMode == 1 && numHeldNotes == 0) { // hold and reset
+        reset();
+        holdAccum = true;
+    } else if (resetMode == 2 && numHeldNotes == 0) { // hold no reset
+        holdAccum = true;
+    }
 }
 
 void Spinner::tempo(juce::AudioPlayHead* playhead)
@@ -125,52 +142,47 @@ void Spinner::tempo(juce::AudioPlayHead* playhead)
     }
 }
 
-void Spinner::nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, int brake)
+void Spinner::nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, float brakeStrength, int brake)
 {
-    float riseScaled = nudgeStrength * 4.0f;
-    float fallScaled = nudgeStrength;
+    float nudgeRiseScaled = nudgeStrength * 400.0f;
+    float nudgeFallScaled = nudgeStrength * 100.0f;
     
-    if (fallScaled <= sampleRate/20.0f)
-    {
-        fallScaled = sampleRate/20.0f;
-    } else if (fallScaled >= sampleRate/2.0f)
-    {
-        fallScaled = sampleRate/2.0f;
-    }
+    if (nudgeFallScaled <= sampleRate/20.0f) { nudgeFallScaled = sampleRate/20.0f; }
+    else if (nudgeFallScaled >= sampleRate/2.0f) { nudgeFallScaled = sampleRate/2.0f; }
     
-    forwardLPG.setEnvelopeSlew(riseScaled, fallScaled);
-    backwardLPG.setEnvelopeSlew(riseScaled, fallScaled);
-    brakeLPG.setEnvelopeSlew(sampleRate/50.0f, sampleRate/50.0f);
+    forwardLPG.setEnvelopeSlew(nudgeRiseScaled, nudgeFallScaled);
+    backwardLPG.setEnvelopeSlew(nudgeRiseScaled, nudgeFallScaled);
+    
+    float brakeTimeScaled = brakeStrength * 100.0f;
+    
+    brakeLPG.setEnvelopeSlew(brakeTimeScaled, brakeTimeScaled);
 
+    // trigger envelope
     forwardLPG.triggerEnvelope((bool)nudgeForward);
     backwardLPG.triggerEnvelope((bool)nudgeBackward);
     brakeLPG.triggerEnvelope((bool)brake);
-    
 }
+
 
 void Spinner::accumulate()
 {
     float nudgeValue = (forwardLPG.generateEnvelope() + (backwardLPG.generateEnvelope() * -1.0f)) * 10.0f;
     float brakeValue = (1.0f - brakeLPG.generateEnvelope());
-    
-    if (rateMode) // sync
-    {
-        if (rateBPM < 0 || rateBPM >= subdivisionMultiplier.size())
-            return;
-        
-        float multiplier = subdivisionMultiplier[rateBPM];
-        if (multiplier == 0.0f)
-            return;
-
-        float bpmInHz = ((bpm/60.0f) + nudgeValue) * multiplier;
-        phase += (bpmInHz/sampleRate) * brakeValue;
-
-    } else {
-        float rateInHz = (rateFree + nudgeValue);
-        phase += (rateInHz/sampleRate) * brakeValue;
-
+    float scaleMultiplier = rateScaleMultiplier[rateScale];
+    if (!holdAccum){
+        if (rateMode) // sync
+        {
+            float multiplier = subdivisionMultiplier[rateBPM];
+            
+            float bpmInHz = ((bpm/60.0f) * multiplier * scaleMultiplier) + nudgeValue;
+            phase += (bpmInHz/sampleRate) * brakeValue;
+            
+        } else {
+            float rateInHz = (rateFree * scaleMultiplier) + nudgeValue;
+            phase += (rateInHz/sampleRate) * brakeValue;
+            
+        }
     }
-    
     if (phase > 1.0f) phase -= 1.0f;
     previousPhase = phase;
 }

@@ -75,7 +75,7 @@ TingeAudioProcessorEditor::~TingeAudioProcessorEditor()
 void TingeAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll(juce::Colour(180, 180, 180));
+    g.fillAll(juce::Colour(34, 35, 36));
 
     auto bounds = getLocalBounds().toFloat();
     float x = bounds.getX();
@@ -155,11 +155,10 @@ void TingeAudioProcessorEditor::initializeParameter()
         auto incr = juce::String(index);
         
         ratio[index] = audioProcessor.apvts.getRawParameterValue(juce::String("ratio") + incr)->load();
-        state[index] = audioProcessor.apvts.getRawParameterValue(juce::String("state") + incr)->load();
         opacity[index] = audioProcessor.apvts.getRawParameterValue(juce::String("opacity") + incr)->load();
         colorIndex[index] = audioProcessor.apvts.getRawParameterValue(juce::String("colorIndex") + incr)->load();
 
-        spinnerGraphics.setParams(index, ratio[index], state[index], colorIndex[index], opacity[index]);
+        spinnerGraphics.setParams(index, ratio[index], colorIndex[index], opacity[index]);
         
     }
 
@@ -187,11 +186,10 @@ void TingeAudioProcessorEditor::parameterValueChanged (int parameterIndex, float
         auto incr = juce::String(index);
         
         ratio[index] = juce::String("ratio") + incr == newParameterID ? scaledValue : ratio[index];
-        state[index] = juce::String("state") + incr == newParameterID ? scaledValue : state[index];
         colorIndex[index] = juce::String("colorIndex") + incr == newParameterID ? scaledValue : colorIndex[index];
         opacity[index] = juce::String("opacity") + incr == newParameterID ? scaledValue : opacity[index];
 
-        spinnerGraphics.setParams(index, ratio[index], state[index], colorIndex[index], opacity[index]);
+        spinnerGraphics.setParams(index, ratio[index], colorIndex[index], opacity[index]);
     }
     
     globalLayout->setLPGStrength(nudgeStrength);
