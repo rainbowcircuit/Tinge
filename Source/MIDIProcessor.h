@@ -23,8 +23,8 @@ public:
     std::array<float, 16> getheldPitches();
     int getNumHeldNotes();
     
-    void noteOn(juce::MidiBuffer& midiBuffer, int samplePosition, int noteNumber, int noteVelocity);
-    void noteOff(juce::MidiBuffer& midiBuffer, int samplePosition, int noteNumber);
+    void noteOn(juce::MidiBuffer& midiBuffer, int channel, int samplePosition, int noteNumber, int noteVelocity);
+    void noteOff(juce::MidiBuffer& midiBuffer, int channel, int samplePosition, int noteNumber);
 
     void processInteraction()
     {
@@ -43,7 +43,8 @@ public:
         
     void notePlayback(juce::MidiBuffer& midiBuffer)
     {
-        if (numThresholds <= 0) { flushNote(midiBuffer); }
+        if (numThresholds <= 0)
+            flushNote(midiBuffer);
         
         for (int i = 0; i < numThresholds; i++)
         {
@@ -63,6 +64,7 @@ public:
             int controllerScaled = (127 * thresholdWeight);
             const int currentController = juce::jlimit(0, 127, controllerScaled);
 
+            int mpeChannel = i + 1;
             if (triggerCondition)
             {
                 if (!noteValue[i].isOn || noteValue[i].activeNoteNumber != currentNote)
@@ -70,16 +72,15 @@ public:
                     // note off message for previously different note on
                     if (noteValue[i].isOn && noteValue[i].activeNoteNumber != -1)
                     {
-                        noteOff(midiBuffer, 0, noteValue[i].activeNoteNumber);
+                        noteOff(midiBuffer, mpeChannel, 0, noteValue[i].activeNoteNumber);
                     }
-
-                    noteOn(midiBuffer, 0, currentNote, currentVelocity);
+                    
+                    noteOn(midiBuffer, mpeChannel, 0, currentNote, currentVelocity);
                     noteValue[i].isOn = true;
                     noteValue[i].activeNoteNumber = currentNote;
                     
                 }
                 
-                int mpeChannel = i + 1;
                 midiBuffer.addEvent(juce::MidiMessage::controllerEvent(mpeChannel, 74, currentController), 0);
                 midiBuffer.addEvent(juce::MidiMessage::aftertouchChange(mpeChannel, currentNote, currentController), 0);
 
@@ -88,7 +89,7 @@ public:
             {
                 if (noteValue[i].isOn && noteValue[i].activeNoteNumber != -1)
                 {
-                    noteOff(midiBuffer, 0, noteValue[i].activeNoteNumber);
+                    noteOff(midiBuffer, mpeChannel, 0, noteValue[i].activeNoteNumber);
                     noteValue[i].isOn = false;
                     noteValue[i].activeNoteNumber = -1;
                 }
@@ -98,13 +99,11 @@ public:
     
     void flushNote(juce::MidiBuffer& midiBuffer)
     {
-        for (int i = 0; i < 128; i++)
-        {
-            noteOff(midiBuffer, 0, i);
-        }
-        
-        for (int i = 0; i < 16; i++)
-        {
+        for (int i = 0; i < 16; i++) {
+            int noteNumber = noteValue[i].activeNoteNumber;
+            int channel = i + 1;
+            
+            noteOff(midiBuffer, channel, 0, noteNumber);
             noteValue[i].isOn = false;
             noteValue[i].isAvailable = true;
         }

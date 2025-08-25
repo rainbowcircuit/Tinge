@@ -3,290 +3,36 @@
 #include "InteractionLogic.h"
 #include "LookAndFeel.h"
 #include "DSP.h"
-
-class DrawHelper
-{
-public:
-    void drawWithoutOverlap(juce::Graphics& g, juce::Path& path, juce::Colour color)
-    {
-        g.setColour(color);
-        g.fillPath(path);
-    }
-
-    void drawDoubleOverlap(juce::Graphics& g, juce::Path& pathA, juce::Path& pathB, juce::Colour color)
-    {
-        g.saveState();
-        g.reduceClipRegion(pathA);
-        g.reduceClipRegion(pathB);
-        g.setColour(color);
-        g.fillAll();
-        g.restoreState();
-    }
-
-    void drawTripleOverlap(juce::Graphics& g, juce::Path& pathA, juce::Path& pathB, juce::Path& pathC, juce::Colour color)
-    {
-        g.saveState();
-        g.reduceClipRegion(pathA);
-        g.reduceClipRegion(pathB);
-        g.reduceClipRegion(pathC);
-
-        g.setColour(color);
-        g.fillAll();
-        g.restoreState();
-    }
-};
-
+#include "GraphicsHelper.h"
 
 class SpinnerGraphics : public juce::Component, public Interaction, public DrawHelper, public juce::Timer
 {
 public:
-    SpinnerGraphics()
-    {
-        thresholdSlew.setSampleRate(60);
-        thresholdSlew.setEnvelopeSlew(800, 800);
-        startTimerHz(60);
-    }
+    SpinnerGraphics();
+    void paint(juce::Graphics& g) override;
+    void resized() override;
     
-                   
-    void paint(juce::Graphics& g) override
-    {
-        setWheelPosition();
-        
-        // summed wheel
-        auto sumA = generateWheelPath(g, 0, true);
-        auto sumB = generateWheelPath(g, 1, true);
-        auto sumC = generateWheelPath(g, 2, true);
-        
-        drawWithoutOverlap(g, sumC, colorC);
-        drawWithoutOverlap(g, sumB, colorB);
-        drawWithoutOverlap(g, sumA, colorA);
-        drawDoubleOverlap(g, sumA, sumB, colorAB);
-        drawDoubleOverlap(g, sumB, sumC, colorBC);
-        drawDoubleOverlap(g, sumA, sumC, colorAC);
-        drawTripleOverlap(g, sumA, sumB, sumC, colorABC);
-        
-        
-        // remove this later
-        auto bounds = getLocalBounds().toFloat();
-        float wheelWidth = bounds.getWidth() * 0.75f;
-        float wheelMargin = bounds.getWidth() * 0.125f;
-        float x = bounds.getX();
-        float y = bounds.getY();
-        float sumYScale = animationValue * bounds.getHeight() * 0.25f;
-        float sumYOffset = (1.0f - animationValue) * bounds.getHeight() * 0.45f;
-        
-        drawThreshold(g, x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
-        
-        
-        // single wheel
-        auto C = generateWheelPath(g, 2, false);
-        auto B = generateWheelPath(g, 1, false);
-        auto A = generateWheelPath(g, 0, false);
-        
-        drawWithoutOverlap(g, A, p.colorA);
-        drawWithoutOverlap(g, B, p.colorB);
-        drawWithoutOverlap(g, C, p.colorC);
-    }
+    //  ==============================================================================
+    void setWheelPosition();
+    juce::Path generateWheelPath(juce::Graphics& g, int index, bool isSum);
+    void drawThreshold(juce::Graphics& g, int x, int y, int width, int height);
+    void setThresholdSlew(float slewTime);
+    //==============================================================================
+
+    void setOverlapIndex(int overlapIndex);
+    void setOverlapColours();
+    //  ==============================================================================
+
+    void setParams(int index, int ratio, int colorIndex, float opacity);
+    void setPhase(int index, float phaseValue);
+    void setAnimation(float value);
+    void setAnimationValue(float animationValue);
     
-    void setOverlapIndex(int overlapIndex)
-    {
-        this->overlapIndex = overlapIndex;
-        setOverlapColours();
-    }
     
-    void setOverlapColours()
-    {
-        if (overlapIndex == 0 || overlapIndex == 3 || overlapIndex == 4 || overlapIndex == 6){
-            colorA = p.colorA;
-            colorB = p.colorB;
-            colorC = p.colorC;
-        } else {
-            colorA = Colors::backgroundFill;
-            colorB = Colors::backgroundFill;
-            colorC = Colors::backgroundFill;
-        }
-        
-        if (overlapIndex == 1 || overlapIndex == 3 || overlapIndex == 5 || overlapIndex == 6){
-            colorAB = p.colorAB;
-            colorBC = p.colorBC;
-            colorAC = p.colorAC;
-        } else {
-            colorAB = Colors::backgroundFill;
-            colorBC = Colors::backgroundFill;
-            colorAC = Colors::backgroundFill;
-        }
-        
-        if (overlapIndex == 2 || overlapIndex == 4 || overlapIndex == 5 || overlapIndex == 6){
-            colorABC = p.colorABC;
-        } else {
-            colorABC = Colors::backgroundFill;
-        }
-    }
-    
-    void drawGrid(juce::Graphics& g, int x, int y, int width, int height)
-    {
-        for (int i = 0; i < 10; i++){
-            for (int j = 0; j < 10; j++){
-                
-                
-                
-                
-            }
-        }
-    }
-    
-    void drawThreshold(juce::Graphics& g, int x, int y, int width, int height)
-    {
-        float twopi = juce::MathConstants<float>::twoPi;
-        float pi = juce::MathConstants<float>::pi;
-
-        float innerRadius = width * 0.5f;
-        float outerRadius = width * 0.55f;
-        
-        for (int i = 0; i < numThresholds; i++)
-        {
-            float weightA = ((float)rotationValue[0].threshold[i] * rotationValue[0].opacity)/3.0f;
-            float weightB = ((float)rotationValue[1].threshold[i] * rotationValue[1].opacity)/3.0f;
-            float weightC = ((float)rotationValue[2].threshold[i] * rotationValue[2].opacity)/3.0f;
-            float thresholdWeight = (weightA + weightB + weightC);
-            thresholdSlew.triggerEnvelope(thresholdWeight);
-            
-            float thresholdHeight = thresholdSlew.generateEnvelope() * 40.0f;
-            if (numThresholds > 0 && numThresholds <= 16){
-                float angleOffset = fmodf(thresholdAngles[i] - pi - 0.1, 1.0f);
-                float cos = std::cos(angleOffset * twopi);
-                float sin = std::sin(angleOffset * twopi);
-
-                juce::Point thresholdStart = { (x + width/2) + cos * innerRadius,
-                    (y + height/isometricSkew) + sin * innerRadius/isometricSkew };
-                
-                juce::Point thresholdEnd = { (x + width/2) + cos * outerRadius,
-                    (y + height/isometricSkew) + sin * outerRadius/isometricSkew };
-
-                juce::Path graphicPath;
-                graphicPath.startNewSubPath(thresholdStart.x, thresholdStart.y);
-                graphicPath.lineTo(thresholdEnd.x, thresholdEnd.y);
-                graphicPath.lineTo(thresholdEnd.x, thresholdEnd.y - thresholdHeight);
-                graphicPath.lineTo(thresholdStart.x, thresholdStart.y - thresholdHeight);
-
-                bool triggerCondition = getTriggerCondition(i, overlapIndex);
-                
-                float alpha = triggerCondition ? 0.875f : 0.25f;
-                g.setColour(Colors::graphicWhite.withAlpha((float)alpha));
-                g.fillPath(graphicPath);
-                g.strokePath(graphicPath, juce::PathStrokeType(2.0f));
-            }
-        }
-    }
-
-    void setAnimation(float value)
-    {
-        animationValue = value;
-        isometricSkew = (1.0f - animationValue) + 1.0f;
-    }
-    
-    void resized() override
-    {
-        setWheelPosition();
-    }
-    
-    void setParams(int index, int ratio, int colorIndex, float opacity)
-    {
-        rotationValue[index].ratio = ratio;
-        rotationValue[index].colorIndex = colorIndex;
-        rotationValue[index].opacity = opacity;
-        
-        p.setColors(rotationValue[0].colorIndex,
-                    rotationValue[1].colorIndex,
-                    rotationValue[2].colorIndex,
-                    rotationValue[0].opacity,
-                    rotationValue[1].opacity,
-                    rotationValue[2].opacity);
-
-        repaint();
-    }
-    
-    void setPhase(int index, float phaseValue)
-    {
-        rotationValue[index].phase = phaseValue;
-        repaint();
-    }
-    
-    void setAnimationValue(float animationValue)
-    {
-        this->animationValue = animationValue;
-    }
-    
-    void setWheelPosition()
-    {
-        auto bounds = getLocalBounds().toFloat();
-        float wheelWidth = bounds.getWidth() * 0.75f;
-        float wheelMargin = bounds.getWidth() * 0.125f;
-        float height = bounds.getHeight();
-        float x = bounds.getX();
-        float y = bounds.getY();
-        
-        float yOffset = animationValue * bounds.getHeight() * 2.0f;
-        
-        rotationValue[0].bounds.setBounds(x + wheelMargin, y - yOffset, wheelWidth, wheelWidth);
-        rotationValue[1].bounds.setBounds(x + wheelMargin, y + height * 0.075f - yOffset, wheelWidth, wheelWidth);
-        rotationValue[2].bounds.setBounds(x + wheelMargin, y + height * 0.15f - yOffset, wheelWidth, wheelWidth);
-
-        float sumYScale = animationValue * bounds.getHeight() * 0.25f;
-        float sumYOffset = (1.0f - animationValue) * bounds.getHeight() * 0.45f;
-        
-        rotationValue[0].sumBounds.setBounds(x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
-        rotationValue[1].sumBounds.setBounds(x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
-        rotationValue[2].sumBounds.setBounds(x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
-        
-    }
-
-    juce::Path generateWheelPath(juce::Graphics& g, int index, bool isSum)
-    {
-
-        float x = isSum ? rotationValue[index].sumBounds.getX() : rotationValue[index].bounds.getX();
-        float y = isSum ? rotationValue[index].sumBounds.getY() : rotationValue[index].bounds.getY();
-        float width = isSum ? rotationValue[index].sumBounds.getWidth() : rotationValue[index].bounds.getWidth();
-        float height = isSum ? rotationValue[index].sumBounds.getHeight() : rotationValue[index].bounds.getHeight();
-                
-        int ratio = rotationValue[index].ratio;
-        if (ratio < 0) { ratio = 1; }
-        
-        float twopi = juce::MathConstants<float>::twoPi;
-        float radius = width/2;
-        
-        juce::Path wheelPath;
-        for(int i = 0; i < ratio * 2 - 1; i+= 2){
-            
-            float startAngle = rotationValue[index].angles[i] * twopi;
-            float endAngle = rotationValue[index].angles[i + 1] * twopi;
-
-            if (endAngle <= startAngle)
-                endAngle += twopi;
-            if (i % 2 == 0){
-                
-                wheelPath.startNewSubPath(x + width/2, y + height/(isometricSkew)); // center
-                wheelPath.addCentredArc(x + width/2, y + height/(isometricSkew),
-                                        radius, radius/(isometricSkew),
-                                        0.0f, startAngle, endAngle);
-                wheelPath.closeSubPath();
-                wheelPath = wheelPath.createPathWithRoundedCorners(1);
-            }
-        }
-        return wheelPath;
-    }
-
-    void setThresholdSlew(float slewTime)
-    {
-        thresholdSlew.setEnvelopeSlew(slewTime, slewTime);
-    }
-
-    void timerCallback() override
-    {
-        repaint();
-    }
 
 private:
+    void timerCallback() override;
+
     LowPassGate thresholdSlew;
     
     juce::Colour colorA, colorB, colorC, colorAB, colorBC, colorAC, colorABC;
@@ -294,8 +40,88 @@ private:
     int overlapIndex;
     float animationValue;
     float isometricSkew;
+    float isometricOffset;
+    juce::Point<float> dragStartPoint;
     float yOffset, yPosOffset;
     Palette p;
 };
 
+/*
+class MeterGraphics : public juce::Component, public Interaction, public DrawHelper, public juce::Timer
+{
+public:
+    MeterGraphics()
+    {
+        startTimerHz(30);
+    }
+    
+    void paint(juce::Graphics& g) override
+    {
+        auto fillBounds = bounds;
+        g.setColour(Colors::backgroundFillAlt);
+        g.fillRoundedRectangle(fillBounds, 3);
+        drawMeter(g);
+    }
+    
+    void resized() override
+    {
+        bounds = getLocalBounds().toFloat();
+    }
+    
+    void drawMeter(juce::Graphics &g)
+    {
+        float graphicWidth = bounds.getWidth() * 0.9f;
+        float widthMargin = bounds.getWidth() * 0.05f;
+        float widthIncr = graphicWidth/128;
+        
+        float graphicHeight = bounds.getHeight() * 0.9f;
+        for (int i = 0; i < numThresholds; i++)
+        {
+            juce::Path meterPath;
+            
+            meterPath.startNewSubPath(widthMargin, bounds.getCentreY());
+            for (int j = 0; j < 128; j++)
+            {
+                float meterValue = juce::jlimit(0.0f, 1.0f, measurement[i][j]);
+                meterPath.lineTo(bounds.getX() + widthIncr * j,
+                                 bounds.getCentreY() + meterValue * 20.0f);
+                
+                meterPath = meterPath.createPathWithRoundedCorners(2);
+            }
+            g.setColour(juce::Colour(0, 0, 0));
+            g.strokePath(meterPath, juce::PathStrokeType(2.0f));
+        }
+    }
+    
+    void setMeterArray()
+    {
+        meterWriteIndex += 1;
+        if (meterWriteIndex > 127) { meterWriteIndex = 0; }
+        
+        for (int i = 0; i < numThresholds; i++){
+            float weightA = ((float)rotationValue[0].threshold[i] * rotationValue[0].opacity)/3.0f;
+            float weightB = ((float)rotationValue[1].threshold[i] * rotationValue[1].opacity)/3.0f;
+            float weightC = ((float)rotationValue[2].threshold[i] * rotationValue[2].opacity)/3.0f;
+            float thresholdWeight = (weightA + weightB + weightC);
+            measurement[i][meterWriteIndex] = thresholdWeight;
+        }
+    }
+    
+    void setPhase(int index, float phaseValue)
+    {
+        rotationValue[index].phase = phaseValue;
+    }
 
+    
+    void timerCallback() override
+    {
+        setMeterArray();
+        repaint();
+    }
+private:
+    juce::Rectangle<float> bounds;
+    Palette p;
+    int meterWriteIndex = 0;
+    std::array<std::array<float, 128>, 16> measurement;
+};
+*/

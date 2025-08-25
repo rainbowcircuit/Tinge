@@ -7,13 +7,13 @@
 
   ==============================================================================
 */
-
 #pragma once
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "LookAndFeel.h"
 #include "Graphics.h"
 
+/*
 
 class DraftGraphics : public juce::LookAndFeel_V4, DrawHelper
 {
@@ -113,11 +113,7 @@ public:
             
             g.setColour(juce::Colour(190, 190, 190));
             g.strokePath(sinMainPath, juce::PathStrokeType(1.5f));
-                        
         }
-        
-        
-        
     }
 
     void drawRatio(juce::Graphics& g, float x, float y, float size, float index)
@@ -166,7 +162,6 @@ public:
         g.setColour(juce::Colour(190, 190, 190));
         g.strokePath(frontPath, juce::PathStrokeType(1.5f));
         g.fillPath(frontEndPath);
-
     }
 
     void drawOpacity(juce::Graphics& g, float x, float y, float size, float pos)
@@ -184,18 +179,16 @@ public:
         g.strokePath(leftCircle, juce::PathStrokeType(1.5f));
         g.strokePath(rightCircle, juce::PathStrokeType(1.5f));
 
-        drawDoubleOverlap(g, leftCircle, rightCircle, juce::Colour(190, 190, 190));
+        drawDoubleOverlap(g, leftCircle, rightCircle, juce::Colour(190, 190, 190), false);
         
     }
     
     int index;
     juce::Colour iconShade = juce::Colour(190, 190, 190);
     juce::Colour iconDisabled = juce::Colour(90, 90, 90);
-
-    
 };
 
-
+*/
 class DialGraphics : public juce::LookAndFeel_V4, DrawHelper
 {
 public:
@@ -256,9 +249,9 @@ public:
             colorB = p.colorB;
             colorC = p.colorC;
         } else {
-            colorA = Colors::backgroundFill;
-            colorB = Colors::backgroundFill;
-            colorC = Colors::backgroundFill;
+            colorA = Colors::backgroundFillAlt;
+            colorB = Colors::backgroundFillAlt;
+            colorC = Colors::backgroundFillAlt;
         }
         
         if (overlapIndex == 1 || overlapIndex == 3 || overlapIndex == 5 || overlapIndex == 6){
@@ -266,9 +259,9 @@ public:
             colorBC = p.colorBC;
             colorAC = p.colorAC;
         } else {
-            colorAB = Colors::backgroundFill;
-            colorBC = Colors::backgroundFill;
-            colorAC = Colors::backgroundFill;
+            colorAB = Colors::backgroundFillAlt;
+            colorBC = Colors::backgroundFillAlt;
+            colorAC = Colors::backgroundFillAlt;
         }
         
         if (overlapIndex == 2 || overlapIndex == 4 || overlapIndex == 5 || overlapIndex == 6){
@@ -277,18 +270,18 @@ public:
             colorABC = Colors::backgroundFill;
         }
         
-        drawWithoutOverlap(g, pathA, colorA);
-        drawWithoutOverlap(g, pathB, colorB);
-        drawWithoutOverlap(g, pathC, colorC);
-        drawDoubleOverlap(g, pathA, pathB, colorAB);
-        drawDoubleOverlap(g, pathB, pathC, colorBC);
-        drawDoubleOverlap(g, pathA, pathC, colorAC);
-        drawTripleOverlap(g, pathA, pathB, pathC, colorABC);
+        drawWithoutOverlap(g, pathA, colorA, true);
+        drawWithoutOverlap(g, pathB, colorB, true);
+        drawWithoutOverlap(g, pathC, colorC, true);
+        drawDoubleOverlap(g, pathA, pathB, colorAB, true);
+        drawDoubleOverlap(g, pathB, pathC, colorBC, true);
+        drawDoubleOverlap(g, pathA, pathC, colorAC, true);
+        drawTripleOverlap(g, pathA, pathB, pathC, colorABC, true);
         
-        g.setColour(p.colorABC);
-        g.strokePath(pathA, juce::PathStrokeType(1.5f));
-        g.strokePath(pathB, juce::PathStrokeType(1.5f));
-        g.strokePath(pathC, juce::PathStrokeType(1.5f));
+  //     g.setColour(Colors::graphicBlack);
+   //     g.strokePath(pathA, juce::PathStrokeType(1.5f));
+    //    g.strokePath(pathB, juce::PathStrokeType(1.5f));
+    //    g.strokePath(pathC, juce::PathStrokeType(1.5f));
     }
     
     void drawRate(juce::Graphics &g, float x, float y, float width, float height, float position)
@@ -447,6 +440,7 @@ private:
     float lpgValue;
 };
 
+/*
 class ColorButtonGraphics : public juce::LookAndFeel_V4
 {
 public:
@@ -469,169 +463,4 @@ private:
     int colorButtonIndex = 0;
 };
 
-class EditableTextBoxSlider : public juce::Component, juce::Timer, juce::AudioProcessorParameter::Listener, juce::AsyncUpdater, juce::Label::Listener
-{
-public:
-    EditableTextBoxSlider(TingeAudioProcessor& p, juce::String parameterID, juce::String parameterSuffix) : audioProcessor(p)
-    {
-        this->parameterID = parameterID;
-        this->parameterSuffix = parameterSuffix;
-        
-        addAndMakeVisible(textBox);
-        textBox.setEditable(false, false, false);
-        textBox.setInterceptsMouseClicks(false, false);
-        
-        // initialize displayed value
-        auto value = audioProcessor.apvts.getRawParameterValue(parameterID)->load();
-        juce::String formattedValue = juce::String(value, numDecimals) + parameterSuffix;
-        textBox.setText(formattedValue, juce::dontSendNotification);
-        textBox.addListener(this);
-        
-        // initialize parameter ranges
-        juce::NormalisableRange range = audioProcessor.apvts.getParameterRange(parameterID);
-        rangeStart = range.start;
-        rangeEnd = range.end;
-        
-        // add listener
-        const auto params = audioProcessor.getParameters();
-        for (auto param : params){
-            param->addListener(this);
-        }
-        
-        // start timer
-        startTimerHz(30);
-    }
-    
-    ~EditableTextBoxSlider()
-    {
-        const auto params = audioProcessor.getParameters();
-        for (auto param : params){
-            param->removeListener(this);
-        }
-    }
-    
-    void paint(juce::Graphics& g) override {}
-    
-    void resized() override {
-        auto bounds = getLocalBounds();
-        textBox.setBounds(bounds);
-        
-    }
-        
-    void mouseDown(const juce::MouseEvent& m) override
-    {
-        auto mousePoint = m.getPosition().toFloat();
-        dragStartPoint.y = mousePoint.y;
-        
-        initialParamValue = audioProcessor.apvts.getParameter(parameterID)->getValue();
-    }
-
-    void mouseDrag(const juce::MouseEvent& m) override
-    {
-        auto mousePoint = m.getPosition().toFloat();
-        float deltaY = mousePoint.y - dragStartPoint.y;
-        
-        float sensitivity = 0.005f;
-        float newValue = juce::jlimit(0.0f, 1.0f, initialParamValue + (-deltaY * sensitivity));
-        textValueToParamValue(newValue);
-    }
-    
-    void mouseUp(const juce::MouseEvent& m) override
-    {
-        auto mousePoint = m.getPosition().toFloat();
-        dragStartPoint.y = mousePoint.y;
-    }
-    
-    void mouseDoubleClick(const juce::MouseEvent& m) override
-    {
-        textBox.setInterceptsMouseClicks(true, true);
-        textBox.setEditable(true, true, false);
-        textBox.showEditor();
-        textBox.grabKeyboardFocus();
-    }
-    
-    void labelTextChanged(juce::Label* l) override
-    {
-        auto value = l->getText().getFloatValue();
-        float valueLimited = juce::jlimit(rangeStart, rangeEnd, value);
-        
-        l->setText(juce::String(valueLimited, numDecimals), juce::dontSendNotification);
-        textBox.setInterceptsMouseClicks(false, false);
-        
-        float normalized = (valueLimited - rangeStart) / (rangeEnd - rangeStart);
-        textValueToParamValue(normalized);
-        repaint();
-    }
-
-    void textValueToParamValue(float value)
-    {
-        value = juce::jlimit(0.0f, 1.0f, value);
-        audioProcessor.apvts.getParameter(parameterID)->setValueNotifyingHost(value);
-    }
-        
-    void parameterValueChanged (int parameterIndex, float newValue) override
-    {
-        newValueAtomic.store(newValue);
-        parameterIndexAtomic.store(parameterIndex);
-        triggerAsyncUpdate();
-    }
-    
-    void parameterGestureChanged (int parameterIndex, bool gestureIsStarting) override {}
-    
-    void handleAsyncUpdate() override
-    {
-        float newValue = newValueAtomic.load();
-        int parameterIndex = parameterIndexAtomic.load();
-        juce::String newParameterID;
-        float scaledValue;
-        
-        if (auto* param = dynamic_cast<juce::AudioProcessorParameterWithID*>(audioProcessor.getParameters()[parameterIndex]))
-        {
-            if (auto* rangedParam = dynamic_cast<juce::RangedAudioParameter*>(param))
-            {
-                scaledValue = rangedParam->convertFrom0to1(newValue);
-                newParameterID = param->paramID;
-            }
-        }
-        
-        if (newParameterID == parameterID)
-        {
-            juce::String formattedValue = juce::String(scaledValue, numDecimals) + parameterSuffix;
-            textBox.setText(formattedValue, juce::dontSendNotification);
-        }
-    }
-
-    void setFontSize(float size)
-    {
-        textBox.setFont(juce::FontOptions(size, juce::Font::plain));
-    }
-    
-    void setNumDecimals(int numDecimals)
-    {
-        this->numDecimals = numDecimals;
-    }
-    
-    void timerCallback() override
-    {
-        auto bounds = getLocalBounds().toFloat();
-        auto mouse = getMouseXYRelative().toFloat();
-        if (bounds.contains(mouse))
-        {
-            setMouseCursor(juce::MouseCursor::UpDownResizeCursor);
-        }
-    }
-    
-private:
-    float initialParamValue;
-    float rangeStart, rangeEnd;
-    std::atomic<float> newValueAtomic;
-    std::atomic<int> parameterIndexAtomic;
-    
-    juce::Point<float> dragStartPoint;
-    juce::Label textBox;
-    int numDecimals = 1;
-    juce::String parameterID, parameterSuffix = "";
-    
-    TingeAudioProcessor& audioProcessor;
-};
-
+*/

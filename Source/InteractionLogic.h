@@ -130,7 +130,7 @@ public:
     
 
     // eventually three of these per rotation
-    int numThresholds = 0;
+    int numThresholds = 0, prevNumThresholds = 0;
     
     std::array<float, 32> angles;
     

@@ -14,10 +14,16 @@
 #include "LookAndFeel.h"
 #include "UserInterfaceLayout.h"
 #include "InteractionLogic.h"
+#include "PresetControl.h"
+#include "Presets.h"
+#include "SpinnerControl.h"
+#include "MiscControl.h"
 //==============================================================================
 /**
 */
-class TingeAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::Timer, juce::AudioProcessorParameter::Listener
+class PresetControlsLayout;
+
+class TingeAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::Timer
 {
 public:
     TingeAudioProcessorEditor (TingeAudioProcessor&, std::atomic<std::array<float, 3>>& phases, std::atomic<std::array<float, 16>>& noteValues);
@@ -32,16 +38,14 @@ public:
     void mouseDown(const juce::MouseEvent& event) override
     {
             if (isoView){
-                isoEnterToggle.start();
+            //    isoEnterToggle.start();
                 isoView = false;
             } else {
-                isoExitToggle.start();
+            //    isoExitToggle.start();
                 isoView = true;
             }
     }
     
-    void parameterValueChanged (int parameterIndex, float newValue) override;
-    void parameterGestureChanged (int parameterIndex, bool gestureIsStarting) override {}
     void initializeParameter();
     
 private:
@@ -51,6 +55,7 @@ private:
     
     bool isoView = false;
     float animationValue;
+    /*
     juce::VBlankAnimatorUpdater updater { this };
     
     juce::Animator isoEnterToggle = juce::ValueAnimatorBuilder {}
@@ -70,7 +75,7 @@ private:
             repaint();
         })
         .build();
-
+     */
     std::atomic<std::array<float, 3>>& phasesAtomic;
     std::array<float, 3> phases;
 
@@ -85,10 +90,10 @@ private:
 
     
     SpinnerGraphics spinnerGraphics;
+    std::unique_ptr<PresetControlsLayout> presetLayout;
 
-    std::unique_ptr<RotationLayout> rotationLayout1, rotationLayout2, rotationLayout3;
-    std::unique_ptr<GlobalControlLayout> globalLayout;
-    std::unique_ptr<ValueAssignmentLayout> valueAssignmentLayout;
+    std::unique_ptr<SpinnerLayout> rotationLayout1, rotationLayout2, rotationLayout3;
+    std::unique_ptr<GlobalControlsLayout> globalLayout;
     TingeAudioProcessor& audioProcessor;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TingeAudioProcessorEditor)

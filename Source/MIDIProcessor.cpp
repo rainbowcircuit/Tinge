@@ -73,15 +73,16 @@ int MIDIProcessor::getNumHeldNotes()
 }
 
 
-void MIDIProcessor::noteOn(juce::MidiBuffer& midiBuffer, int samplePosition, int noteNumber, int noteVelocity)
+void MIDIProcessor::noteOn(juce::MidiBuffer& midiBuffer, int channel, int samplePosition, int noteNumber, int noteVelocity)
 {
-    juce::MidiMessage noteOn = juce::MidiMessage::noteOn(1, noteNumber, uint8_t(127));
+    juce::MidiMessage noteOn = juce::MidiMessage::noteOn(channel, noteNumber, uint8_t(127));
     midiBuffer.addEvent(noteOn, samplePosition);
 }
 
-void MIDIProcessor::noteOff(juce::MidiBuffer& midiBuffer, int samplePosition, int noteNumber)
+void MIDIProcessor::noteOff(juce::MidiBuffer& midiBuffer, int channel, int samplePosition, int noteNumber)
 {
-    juce::MidiMessage noteOff = juce::MidiMessage::noteOff(1, noteNumber);
+    noteNumber = juce::jlimit(0, 127, noteNumber);
+    juce::MidiMessage noteOff = juce::MidiMessage::noteOff(channel, noteNumber);
     midiBuffer.addEvent(noteOff, samplePosition);
 }
 

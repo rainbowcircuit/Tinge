@@ -15,67 +15,43 @@ TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, st
     : AudioProcessorEditor (&p), phasesAtomic(phases), noteValuesAtomic(noteValues), audioProcessor (p)
 {
     addAndMakeVisible(spinnerGraphics);
-    spinnerGraphics.setInterceptsMouseClicks(false, false);
+    spinnerGraphics.setInterceptsMouseClicks(true, true);
+    
+    presetLayout = std::make_unique<PresetControlsLayout>(audioProcessor, *this, audioProcessor.params->apvts);
 
+    rotationLayout1 = std::make_unique<SpinnerLayout>(audioProcessor, 0);
+    rotationLayout2 = std::make_unique<SpinnerLayout>(audioProcessor, 1);
+    rotationLayout3 = std::make_unique<SpinnerLayout>(audioProcessor, 2);
     
-    rotationLayout1 = std::make_unique<RotationLayout>(audioProcessor, 0);
-    rotationLayout2 = std::make_unique<RotationLayout>(audioProcessor, 1);
-    rotationLayout3 = std::make_unique<RotationLayout>(audioProcessor, 2);
-    valueAssignmentLayout = std::make_unique<ValueAssignmentLayout>(audioProcessor);
+    globalLayout = std::make_unique<GlobalControlsLayout>(audioProcessor);
     
-    globalLayout = std::make_unique<GlobalControlLayout>(audioProcessor);
-    
+    addAndMakeVisible(*presetLayout);
     addAndMakeVisible(*rotationLayout1);
     addAndMakeVisible(*rotationLayout2);
     addAndMakeVisible(*rotationLayout3);
     addAndMakeVisible(*globalLayout);
-    addAndMakeVisible(*valueAssignmentLayout);
 
-    updater.addAnimator(isoEnterToggle);
-    updater.addAnimator(isoExitToggle);
     
     addAndMakeVisible(overlapSlider);
     overlapSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
     overlapSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 40, 20);
     overlapSlider.setLookAndFeel(&overlapLAF);
-    overlapAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.apvts, "overlap", overlapSlider);
+    overlapAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, "overlap", overlapSlider);
     
 
-    addAndMakeVisible(hueSlider);
-    hueSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    hueSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 40, 20);
-    hueSlider.setRange(-1.0, 2.0f);
-
-    addAndMakeVisible(offsetSlider);
-    offsetSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    offsetSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 40, 20);
-    offsetSlider.setRange(0.0, 100.0);
-    
-    initializeParameter();
-    const auto params = audioProcessor.getParameters();
-    for (auto param : params){
-        param->addListener(this);
-    }
-
-    
-    setSize (650, 450);
+    setSize (550, 550);
     startTimerHz(60);
 }
 
 TingeAudioProcessorEditor::~TingeAudioProcessorEditor()
 {
-    const auto params = audioProcessor.
-    getParameters();
-    for (auto param : params){
-        param->removeListener(this);
-    }
 }
 
 //==============================================================================
 void TingeAudioProcessorEditor::paint (juce::Graphics& g)
 {
     // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll(juce::Colour(34, 35, 36));
+    g.fillAll(juce::Colour(210, 210, 210));
 
     auto bounds = getLocalBounds().toFloat();
     float x = bounds.getX();
@@ -83,47 +59,62 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
     float width = bounds.getWidth();
     float height = bounds.getHeight();
 
-    juce::Path controlFill;
-    float xCoords = animationValue * 225 + 225;
-    controlFill.addRectangle(xCoords, 0, 225, 450);
+    juce::Path bgFillPath;
+    float xCoords = (animationValue * width * 0.4f) + width * 0.6f;
+    float margin = width * 0.02f;
+    bgFillPath.addRoundedRectangle(xCoords, margin, width * 0.4f - margin, height - margin * 2, margin);
+    g.setColour(juce::Colour(203, 203, 203));
+    g.fillPath(bgFillPath);
     g.setColour(juce::Colour(200, 200, 200));
-    
-    float controlWidth = width * 0.275f;
+    g.strokePath(bgFillPath, juce::PathStrokeType(1.5f));
+
+    float controlWidth = width * 0.4f;
     float controlMargin = width * 0.025f;
-    rotationLayout1->setBounds(x + (animationValue * controlWidth * 1.25f) + (width * 0.725f) - controlMargin,
-                               0,
-                               controlWidth,
-                               height * 0.35f);
     
-    rotationLayout2->setBounds(x - (animationValue * controlWidth * 1.25f) + controlMargin,
-                               height * 0.25f,
-                               controlWidth,
-                               height * 0.35f);
+    overlapSlider.setBounds(x + margin,
+                            y + margin,
+                            height * 0.175f,
+                            height * 0.175f);
+    overlapSlider.setMouseDragSensitivity(height * 0.25f);
     
-    rotationLayout3->setBounds(x + (animationValue * controlWidth * 1.25f) + (width * 0.725f) - controlMargin,
+    
+    presetLayout->setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - controlMargin * 0.5f + (margin/2),
+                             y + margin,
+                             controlWidth - margin/2,
+                             height * 0.15f);
+    
+    rotationLayout1->setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - controlMargin * 0.5f,
+                               height * 0.2f,
+                               controlWidth,
+                               height * 0.3f);
+    
+    rotationLayout2->setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - controlMargin * 0.5f,
                                height * 0.5f,
                                controlWidth,
-                               height * 0.35f);
+                               height * 0.3f);
+    
+    rotationLayout3->setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - controlMargin * 0.5f,
+                               height * 0.8f,
+                               controlWidth,
+                               height * 0.3f);
     
     spinnerGraphics.setAnimation(animationValue);
-    spinnerGraphics.setBounds((width - ((animationValue * height * 0.35f) + (height * 0.65f))) * 0.5f,
+    spinnerGraphics.setBounds(0,
                               0,
-                              (animationValue * height * 0.35f) + (height * 0.65f),
+                              (int)(animationValue * width * 0.4f) + (width * 0.6f),
                               height);
-
-    
-  //  valueAssignmentLayout->setBounds(xCoords, height * 0.8f, 225, height * 0.25f);
-    
-    globalLayout->setBounds(0, 400, width, 50);
+        
+    globalLayout->setBounds(0,
+                            height * 0.875f,
+                            (int)(animationValue * width * 0.4f) + (width * 0.6f),
+                            height * 0.1f);
     
 }
 
 void TingeAudioProcessorEditor::resized()
 {
-    overlapSlider.setBounds(5, 5, 80, 80);
     
 }
-
 
 void TingeAudioProcessorEditor::timerCallback()
 {
@@ -138,65 +129,22 @@ void TingeAudioProcessorEditor::timerCallback()
     spinnerGraphics.setNumThresholds(heldNotes);
     spinnerGraphics.processThreshold();
     spinnerGraphics.processAngles();
-}
-
-void TingeAudioProcessorEditor::initializeParameter()
-{
-    nudgeStrength = audioProcessor.apvts.getRawParameterValue(juce::String("nudgeStrength"))->load();
-    globalLayout->setLPGStrength(nudgeStrength);
-
     
-    overlap = audioProcessor.apvts.getRawParameterValue(juce::String("overlap"))->load();
-    spinnerGraphics.setOverlapIndex(overlap);
-    overlapLAF.setColor(colorIndex[0], colorIndex[1], colorIndex[2], opacity[0], opacity[1], opacity[2]);
-    overlapSlider.repaint();
-
+    
     for (int index = 0 ; index < 3; index++){
-        auto incr = juce::String(index);
-        
-        ratio[index] = audioProcessor.apvts.getRawParameterValue(juce::String("ratio") + incr)->load();
-        opacity[index] = audioProcessor.apvts.getRawParameterValue(juce::String("opacity") + incr)->load();
-        colorIndex[index] = audioProcessor.apvts.getRawParameterValue(juce::String("colorIndex") + incr)->load();
 
-        spinnerGraphics.setParams(index, ratio[index], colorIndex[index], opacity[index]);
-        
-    }
-
-}
-
-
-
-void TingeAudioProcessorEditor::parameterValueChanged (int parameterIndex, float newValue)
-{
-    juce::String newParameterID;
-    float scaledValue = 0.0f;
-
-    if (auto* param = dynamic_cast<juce::AudioProcessorParameterWithID*>(audioProcessor.getParameters()[parameterIndex]))
-    {
-        if (auto* rangedParam = dynamic_cast<juce::RangedAudioParameter*>(param))
-        {
-            scaledValue = rangedParam->convertFrom0to1(newValue);
-            newParameterID = param->paramID;
-        }
-    }
-
-    nudgeStrength = juce::String("nudgeStrength") == newParameterID ? scaledValue : nudgeStrength;
-
-    for (int index = 0 ; index < 3; index++){
-        auto incr = juce::String(index);
-        
-        ratio[index] = juce::String("ratio") + incr == newParameterID ? scaledValue : ratio[index];
-        colorIndex[index] = juce::String("colorIndex") + incr == newParameterID ? scaledValue : colorIndex[index];
-        opacity[index] = juce::String("opacity") + incr == newParameterID ? scaledValue : opacity[index];
-
-        spinnerGraphics.setParams(index, ratio[index], colorIndex[index], opacity[index]);
+        spinnerGraphics.setParams(index,
+                                  1,
+                                  1,
+                                  audioProcessor.params->weight[index]->getSafe());
     }
     
-    globalLayout->setLPGStrength(nudgeStrength);
     
-    overlap = juce::String("overlap") == newParameterID ? scaledValue : overlap;
-    spinnerGraphics.setOverlapIndex(overlap);
-    overlapLAF.setColor(colorIndex[0], colorIndex[1], colorIndex[2], opacity[0], opacity[1], opacity[2]);
+    spinnerGraphics.setOverlapIndex(audioProcessor.params->overlap->getSafe());
+    overlapLAF.setColor(1, 1, 1,
+                        audioProcessor.params->weight[0]->getSafe(),
+                        audioProcessor.params->weight[1]->getSafe(),
+                        audioProcessor.params->weight[2]->getSafe());
     overlapSlider.repaint();
 }
 
