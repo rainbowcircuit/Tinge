@@ -22,7 +22,9 @@ public:
         addAndMakeVisible(textBox);
         textBox.setEditable(false, false, false);
         textBox.setInterceptsMouseClicks(false, false);
-        
+        textBox.setColour(juce::Label::outlineWhenEditingColourId, juce::Colours::transparentBlack);
+        textBox.setColour(juce::Label::textColourId, fontColor);
+
         // initialize displayed value
         auto value = audioProcessor.params->apvts.getRawParameterValue(parameterID)->load();
         juce::String formattedValue = juce::String(value, numDecimals) + parameterSuffix;
@@ -104,7 +106,12 @@ public:
         textValueToParamValue(normalized);
         repaint();
     }
-
+    
+    void editorHidden(juce::Label *, juce::TextEditor &) override
+    {
+        textBox.setInterceptsMouseClicks(false, false);
+    }
+    
     void textValueToParamValue(float value)
     {
         value = juce::jlimit(0.0f, 1.0f, value);
@@ -113,8 +120,8 @@ public:
         
     void parameterValueChanged (int parameterIndex, float newValue) override
     {
-        newValueAtomic.store(newValue);
-        parameterIndexAtomic.store(parameterIndex);
+        const juce::SpinLock::ScopedLockType lock(pendingLock);
+        pendingChanges.emplace_back(parameterIndex, newValue);
         triggerAsyncUpdate();
     }
     
@@ -122,24 +129,32 @@ public:
     
     void handleAsyncUpdate() override
     {
-        float newValue = newValueAtomic.load();
-        int parameterIndex = parameterIndexAtomic.load();
-        juce::String newParameterID;
-        float scaledValue;
-        
-        if (auto* param = dynamic_cast<juce::AudioProcessorParameterWithID*>(audioProcessor.getParameters()[parameterIndex]))
+        std::vector<std::pair<int, float>> updatesCopy;
+
         {
-            if (auto* rangedParam = dynamic_cast<juce::RangedAudioParameter*>(param))
-            {
-                scaledValue = rangedParam->convertFrom0to1(newValue);
-                newParameterID = param->paramID;
-            }
+            const juce::SpinLock::ScopedLockType lock(pendingLock);
+            updatesCopy.swap(pendingChanges); // safely move all pending updates
         }
-        
-        if (newParameterID == parameterID)
+
+        for (const auto& [parameterIndex, newValue] : updatesCopy)
         {
-            juce::String formattedValue = juce::String(scaledValue, numDecimals) + parameterSuffix;
-            textBox.setText(formattedValue, juce::dontSendNotification);
+            juce::String newParameterID;
+            float scaledValue;
+            
+            if (auto* param = dynamic_cast<juce::AudioProcessorParameterWithID*>(audioProcessor.getParameters()[parameterIndex]))
+            {
+                if (auto* rangedParam = dynamic_cast<juce::RangedAudioParameter*>(param))
+                {
+                    scaledValue = rangedParam->convertFrom0to1(newValue);
+                    newParameterID = param->paramID;
+                }
+            }
+            
+            if (newParameterID == parameterID)
+            {
+                juce::String formattedValue = juce::String(scaledValue, numDecimals) + parameterSuffix;
+                textBox.setText(formattedValue, juce::dontSendNotification);
+            }
         }
     }
 
@@ -151,6 +166,12 @@ public:
     void setNumDecimals(int numDecimals)
     {
         this->numDecimals = numDecimals;
+    }
+    
+    void setFontColor(juce::Colour fontColor)
+    {
+        this->fontColor = fontColor;
+        textBox.setColour(juce::Label::textColourId, fontColor);
     }
     
     void timerCallback() override
@@ -166,14 +187,15 @@ public:
 private:
     float initialParamValue;
     float rangeStart, rangeEnd;
-    std::atomic<float> newValueAtomic;
-    std::atomic<int> parameterIndexAtomic;
     
+    std::vector<std::pair<int, float>> pendingChanges;
+    juce::SpinLock pendingLock;
+
     juce::Point<float> dragStartPoint;
     juce::Label textBox;
     int numDecimals = 1;
+    juce::Colour fontColor;
     juce::String parameterID, parameterSuffix = "";
     
     TingeAudioProcessor& audioProcessor;
 };
-

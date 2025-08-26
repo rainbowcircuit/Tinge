@@ -15,7 +15,6 @@
 class GraphicsHelper
 {
 public:
-    
     void setSlider(juce::Component& parent, juce::Slider& slider, juce::LookAndFeel& lookAndFeel)
     {
         parent.addAndMakeVisible(slider);

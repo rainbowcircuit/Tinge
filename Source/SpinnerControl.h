@@ -28,6 +28,8 @@ public:
     void drawRate(juce::Graphics& g, float x, float y, float width, float height, float pos);
     void drawRatio(juce::Graphics& g, float x, float y, float size, float index);
     void drawOpacity(juce::Graphics& g, float x, float y, float width, float height, float pos);
+    void drawCrescent(juce::Graphics& g, float x, float y, float size, float amount);
+
 
 private:
     int spinnerIndex;
@@ -36,7 +38,7 @@ private:
     juce::Colour iconDisabled = juce::Colour(90, 90, 90);
 };
 
-class SpinnerLayout : public juce::Component, juce::Button::Listener, GraphicsHelper
+class SpinnerLayout : public juce::Component, public juce::Button::Listener, public juce::Timer, public GraphicsHelper
 {
 public:
     SpinnerLayout(TingeAudioProcessor &p, int index);
@@ -50,7 +52,11 @@ public:
     bool isMouseOver(juce::Point<int> mouse);
 
 private:
+    void timerCallback() override;
+    
+    
     int index;
+    int hover;
     SpinnerControlsLookAndFeel rateLAF { SpinnerControlsLAF::Rate },
     ratioLAF { SpinnerControlsLAF::Ratio },
     opacityLAF { SpinnerControlsLAF::Opacity };

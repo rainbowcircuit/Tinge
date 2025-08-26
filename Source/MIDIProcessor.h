@@ -26,10 +26,10 @@ public:
     void noteOn(juce::MidiBuffer& midiBuffer, int channel, int samplePosition, int noteNumber, int noteVelocity);
     void noteOff(juce::MidiBuffer& midiBuffer, int channel, int samplePosition, int noteNumber);
 
-    void processInteraction()
+    void processInteraction(int mode)
     {
         setNumThresholds(getheldPitches());
-        processThreshold();
+        processThreshold(static_cast<thresholdMode>(mode));
         processAngles();
     }
         
@@ -41,6 +41,11 @@ public:
         this->slewAmount = slewAmount;
     }
         
+    float slewValue(float a, float b, float t)
+    {
+        return a + (b - a) * t;
+    }
+    
     void notePlayback(juce::MidiBuffer& midiBuffer)
     {
         if (numThresholds <= 0)
@@ -58,12 +63,13 @@ public:
             int noteScaled = noteValue[i].noteNumber + (noteScale * thresholdWeight);
             const int currentNote = juce::jlimit(0, 127, noteScaled);
             
-            int velocityScaled = noteValue[i].noteVelocity + (127 * thresholdWeight);
+            int velocityScaled = (127 * thresholdWeight);
             const int currentVelocity = juce::jlimit(0, 127, velocityScaled);
             
             int controllerScaled = (127 * thresholdWeight);
-            const int currentController = juce::jlimit(0, 127, controllerScaled);
-
+            int currentController = juce::jlimit(0, 127, controllerScaled);
+            currentController = (int)slewValue(currentController, prevController, slewAmount);
+            
             int mpeChannel = i + 1;
             if (triggerCondition)
             {
@@ -83,7 +89,8 @@ public:
                 
                 midiBuffer.addEvent(juce::MidiMessage::controllerEvent(mpeChannel, 74, currentController), 0);
                 midiBuffer.addEvent(juce::MidiMessage::aftertouchChange(mpeChannel, currentNote, currentController), 0);
-
+                
+                prevController = currentController;
             }
             else
             {
@@ -109,10 +116,9 @@ public:
         }
     }
     
-    void setSpinnerValues(int index, float phase, float ratio, float opacity)
+    void setSpinnerValues(int index, float phase, float opacity)
     {
         rotationValue[index].phase = phase;
-        rotationValue[index].ratio = ratio;
         rotationValue[index].opacity = opacity;
 
     }
@@ -122,12 +128,17 @@ public:
         this->overlap = overlap;
     }
     
+    void setSlewAmount(float slewAmount)
+    {
+        this->slewAmount = slewAmount/100.0f;
+    }
+    
 private:
     
     double sampleRate;
     int numNoteOn = 0;
     int overlap = 0;
-    float noteScale, velocityScale, controllerScale, slewAmount;
+    float noteScale, velocityScale, controllerScale, prevController, slewAmount;
     
     struct NoteValue
     {
@@ -169,6 +180,7 @@ private:
     float rateFree = 0.0f;
     bool rateMode = false, holdAccum = false, manualReset = false, previousManualReset = false;
     
+    
     std::array <double, 7> rateScaleMultiplier =
     {
         0.125,
@@ -179,46 +191,5 @@ private:
         4.0f,
         8.0f };
 
-    std::array <double, 39> subdivisionMultiplier =
-    {
-        -8.0,
-        -6.0,
-        -5.3333333,
-        -4.0,
-        -3.0,
-        -2.6666667,
-        -2.0,
-        -1.5,
-        -1.3333333,
-        -1.0,
-        -0.75,
-        -0.6666667,
-        -0.5,
-        -0.375,
-        -0.3333333,
-        -0.25,
-        -0.1666667,
-        -0.125,
-        -0.0833333,
-        0.0f,
-        0.0833333,
-        0.125,
-        0.1666667,
-        0.25,
-        0.3333333,
-        0.375,
-        0.5,
-        0.6666667,
-        0.75,
-        1.0,
-        1.3333333,
-        1.5,
-        2.0,
-        2.6666667,
-        3.0,
-        4.0,
-        5.3333333,
-        6.0,
-        8.0 };
 };
 

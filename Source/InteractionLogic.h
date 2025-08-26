@@ -53,17 +53,79 @@ public:
         }
     }
     
+    enum thresholdMode { EquiDistant = 0, Fill, Harmonic, Cascade, Clusters, Sequential, Fibonacci};
     
-    void processThreshold()
+    void processThreshold(thresholdMode mode)
     {
         if (numThresholds == 0)
             return;
         
-        float thresholdIncr = 1.0f/numThresholds;
-        for (int i = 0; i < numThresholds; i++){
-            thresholdAngles[i] = thresholdIncr * i;
+        switch(mode){
+            case thresholdMode::EquiDistant:
+            {
+                float thresholdIncr = 1.0f/numThresholds;
+                for (int i = 0; i < numThresholds; i++){
+                    thresholdAngles[i] = thresholdIncr * i;
+                }
+                break;
+            }
+                
+            case thresholdMode::Fill:
+            {
+                for (int i = 0; i < numThresholds; i++){
+                    thresholdAngles[i] = 0.0625f * i;
+                }
+                break;
+            }
+
+            case thresholdMode::Harmonic:
+            {
+                for (int i = 0; i < numThresholds; i++){
+                    float thresholdIncr = 1.0f / (i + 1);
+                    thresholdAngles[i] = 1.0f - thresholdIncr;
+                }
+                break;
+            }
+                
+            case thresholdMode::Cascade:
+            {
+                for (int i = 0; i < numThresholds; i++){
+                    float incr = (i + 1) / numThresholds;
+                    thresholdAngles[i] = std::log(1.0f + 9.0f * incr) / std::log(10.0f);
+                }
+                break;
+            }
+                
+            case thresholdMode::Clusters:
+            {
+                
+                juce::Random rand;
+                int randomSeed = rand.nextInt();
+                for (int i = 0; i < numThresholds; i++){
+                    float cluster = (randomSeed % 1000) / 1000.0f;
+                    float offset = ((randomSeed % 1000) / 1000.0f - 0.5f) * 0.05f;
+                    
+                    thresholdAngles[i] = std::fmod(cluster + offset, 1.0f);
+                }
+                break;
+            }
+                
+            case thresholdMode::Sequential:
+            {
+                float pos = 0.0f;
+                float step = 1.0f / numThresholds;
+                
+                for (int i = 0; i < numThresholds; i++){
+
+                    thresholdAngles[i] = pos;
+                    pos += step * (1.0f + 0.2f * i);
+                    
+                    if (pos > 1.0f) pos -= 1.0f;
+                }
+                break;
+            }
+
         }
-        
         // find the interaction of thresholds
         for (int index = 0; index < 3; index++)
         {
@@ -127,8 +189,6 @@ public:
         }
     }
 
-    
-
     // eventually three of these per rotation
     int numThresholds = 0, prevNumThresholds = 0;
     
@@ -180,5 +240,23 @@ public:
 
     
 private:
+    
+    void sigmoid(float slope)
+    {
+        for (int i = 0; i < numThresholds; i++)
+        {
+            float y = 1.0f / (1.0f + std::exp(-slope * thresholdAngles[i]));
+            thresholdAngles[i] = y;
+        }
+    }
+    
+    void linear(float slope)
+    {
+        for (int i = 0; i < numThresholds; i++){
+            float y = thresholdAngles[i] / numThresholds;
+            thresholdAngles[i] = y;
+        }
+    }
+    
     
 };

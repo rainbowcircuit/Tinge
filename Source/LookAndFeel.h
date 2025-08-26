@@ -42,7 +42,7 @@ struct Palette
 
     juce::Colour darkenColors(const juce::Colour& c1, const juce::Colour& c2)
     {
-        float floor = 0.2f;
+        float floor = 0.225f;
         float r = std::min(c1.getFloatRed(), c2.getFloatRed()) + floor;
         float g = std::min(c1.getFloatGreen(), c2.getFloatGreen()) + floor;
         float b = std::min(c1.getFloatBlue(), c2.getFloatBlue()) + floor;

@@ -25,12 +25,12 @@
     </GROUP>
     <GROUP id="{3973E95F-5A08-34B3-D8A4-3EFF8421C323}" name="Source">
       <GROUP id="{D3C448FB-8B78-C77E-2666-449CA93B1A21}" name="Editor">
+        <FILE id="pUeG92" name="GraphicsHelper.h" compile="0" resource="0"
+              file="Source/GraphicsHelper.h"/>
         <FILE id="mtIeNx" name="EditableTextSlider.h" compile="0" resource="0"
               file="Source/EditableTextSlider.h"/>
         <FILE id="ytL6f6" name="Graphics.cpp" compile="1" resource="0" file="Source/Graphics.cpp"/>
         <FILE id="leCgPr" name="Graphics.h" compile="0" resource="0" file="Source/Graphics.h"/>
-        <FILE id="pUeG92" name="GraphicsHelper.h" compile="0" resource="0"
-              file="Source/GraphicsHelper.h"/>
         <FILE id="qcMCiU" name="LookAndFeel.h" compile="0" resource="0" file="Source/LookAndFeel.h"/>
         <FILE id="qcfRJD" name="MiscControl.cpp" compile="1" resource="0" file="Source/MiscControl.cpp"/>
         <FILE id="E5gvfz" name="MiscControl.h" compile="0" resource="0" file="Source/MiscControl.h"/>
@@ -41,10 +41,6 @@
               file="Source/SpinnerControl.cpp"/>
         <FILE id="pVsIRq" name="SpinnerControl.h" compile="0" resource="0"
               file="Source/SpinnerControl.h"/>
-        <FILE id="Xz1tp4" name="UserInterfaceLayout.cpp" compile="1" resource="0"
-              file="Source/UserInterfaceLayout.cpp"/>
-        <FILE id="GUTiMP" name="UserInterfaceLayout.h" compile="0" resource="0"
-              file="Source/UserInterfaceLayout.h"/>
         <FILE id="LQpkcx" name="UserInterfaceLookAndFeel.cpp" compile="1" resource="0"
               file="Source/UserInterfaceLookAndFeel.cpp"/>
         <FILE id="URT4hF" name="UserInterfaceLookAndFeel.h" compile="0" resource="0"

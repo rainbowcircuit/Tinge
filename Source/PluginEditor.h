@@ -12,18 +12,19 @@
 #include "PluginProcessor.h"
 #include "Graphics.h"
 #include "LookAndFeel.h"
-#include "UserInterfaceLayout.h"
 #include "InteractionLogic.h"
 #include "PresetControl.h"
 #include "Presets.h"
 #include "SpinnerControl.h"
 #include "MiscControl.h"
+#include "GraphicsHelper.h"
+#include "UserInterfaceLookAndFeel.h"
 //==============================================================================
 /**
 */
 class PresetControlsLayout;
 
-class TingeAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::Timer
+class TingeAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::Button::Listener, juce::Timer, GraphicsHelper
 {
 public:
     TingeAudioProcessorEditor (TingeAudioProcessor&, std::atomic<std::array<float, 3>>& phases, std::atomic<std::array<float, 16>>& noteValues);
@@ -35,27 +36,30 @@ public:
 
     //==============================================================================
     void timerCallback() override;
-    void mouseDown(const juce::MouseEvent& event) override
+    
+    void buttonClicked(juce::Button *b) override
     {
+        if (b == &controlWindowToggle)
+        {
             if (isoView){
-            //    isoEnterToggle.start();
+                isoEnterToggle.start();
                 isoView = false;
             } else {
-            //    isoExitToggle.start();
+                isoExitToggle.start();
                 isoView = true;
             }
+        }
     }
-    
-    void initializeParameter();
-    
+     
+    void buttonStateChanged(juce::Button *) override {}
+        
 private:
-    float overlap, nudgeStrength;
-    std::array<float, 3> rateFree, rateSync, phase, ratio, colorIndex, opacity;
-    std::array<bool, 3> rateMode;
+    juce::LookAndFeel_V4 laf;
+    juce::TextButton controlWindowToggle;
     
     bool isoView = false;
     float animationValue;
-    /*
+    
     juce::VBlankAnimatorUpdater updater { this };
     
     juce::Animator isoEnterToggle = juce::ValueAnimatorBuilder {}
@@ -75,13 +79,13 @@ private:
             repaint();
         })
         .build();
-     */
+     
     std::atomic<std::array<float, 3>>& phasesAtomic;
     std::array<float, 3> phases;
 
     std::atomic<std::array<float, 16>>& noteValuesAtomic;
 
-    DialGraphics overlapLAF { 3 };
+  //  DialGraphics overlapLAF { 3 };
     juce::Slider overlapSlider, hueSlider, offsetSlider;
     
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
@@ -97,4 +101,13 @@ private:
     TingeAudioProcessor& audioProcessor;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TingeAudioProcessorEditor)
+};
+
+class controlWindowLookAndFeel : public juce::LookAndFeel_V4
+{
+public:
+    void drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
+    {
+
+    }
 };

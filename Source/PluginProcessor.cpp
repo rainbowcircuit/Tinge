@@ -131,7 +131,9 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     midiProcessor.holdPitches(midiMessages);
     heldPitches = midiProcessor.getheldPitches();
     
-        midiProcessor.setOverlap(params->overlap->get());
+    midiProcessor.setOverlap(params->overlap->get());
+    midiProcessor.setSlewAmount(params->valueSlew->get());
+
 
     for (int i = 0; i < 3; i++){
         rotation[i].tempo(getPlayHead());
@@ -151,18 +153,19 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
         rotation[i].resetMode(params->resetMode->get(),
                               midiProcessor.getNumHeldNotes(),
                               params->reset->get());
+        
 
         for(int sample = 0; sample < buffer.getNumSamples(); ++sample){
             rotation[i].accumulate();
         }
         
-        midiProcessor.setSpinnerValues(i, rotation[i].getPhase(), // real time rotation
-                                       1,
+        midiProcessor.setSpinnerValues(i,
+                                       rotation[i].getPhase(), // real time rotation
                                        params->weight[i]->get());
         
         phases[i] = rotation[i].getPhase(); // for atomic
     }
-    midiProcessor.processInteraction();
+    midiProcessor.processInteraction(params->thresholdMode->get());
     midiProcessor.notePlayback(midiMessages);
     
     phasesAtomic.store(phases);

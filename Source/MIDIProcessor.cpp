@@ -75,7 +75,7 @@ int MIDIProcessor::getNumHeldNotes()
 
 void MIDIProcessor::noteOn(juce::MidiBuffer& midiBuffer, int channel, int samplePosition, int noteNumber, int noteVelocity)
 {
-    juce::MidiMessage noteOn = juce::MidiMessage::noteOn(channel, noteNumber, uint8_t(127));
+    juce::MidiMessage noteOn = juce::MidiMessage::noteOn(channel, noteNumber, uint8_t(noteVelocity));
     midiBuffer.addEvent(noteOn, samplePosition);
 }
 
@@ -172,10 +172,8 @@ void Spinner::accumulate()
     float scaleMultiplier = rateScaleMultiplier[rateScale];
     if (!holdAccum){
         if (rateMode) // sync
-        {
-            float multiplier = subdivisionMultiplier[rateBPM];
-            
-            float bpmInHz = ((bpm/60.0f) * multiplier * scaleMultiplier) + nudgeValue;
+        {            
+            float bpmInHz = ((bpm/60.0f) * rateFree * scaleMultiplier) + nudgeValue;
             phase += (bpmInHz/sampleRate) * brakeValue;
             
         } else {

@@ -23,6 +23,9 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
     resetMode = std::make_unique<ParameterInstance>(audioProcessor, *this, "resetMode");
     
     overlap = std::make_unique<ParameterInstance>(audioProcessor, *this, "overlap");
+    valueSlew = std::make_unique<ParameterInstance>(audioProcessor, *this, "valueSlew");
+
+    thresholdMode = std::make_unique<ParameterInstance>(audioProcessor, *this, "thresholdMode");
 
     for (int i = 0; i < 3; i++){
         auto incr = juce::String(i);
@@ -67,7 +70,13 @@ Parameters::createParameterLayout()
     layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "overlap", 1},
                                                            "Overlap", 0, 6, 6));
 
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "valueSlew", 1},
+                                                           "Value Slew",
+                                                           juce::NormalisableRange<float> { 0.0f, 100.0f, 0.1 }, 100.0f));
         
+    layout.add(std::make_unique<juce::AudioParameterChoice>(juce::ParameterID { "thresholdMode", 1},
+                                                            "Threshold Mode", juce::StringArray { "EquiDistant", "Fill", "Harmonic", "Cascade", "Clusters", "Sequential", "Fibonacci" }, 0));
+
     std::array<float, 3> phaseDefaults = { 0.0f, 33.0f, 66.0f };
 
     for(int rotation = 0; rotation < 3; rotation++)

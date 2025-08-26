@@ -31,7 +31,15 @@ public:
     rate, phase, weight;
     
     std::unique_ptr<ParameterInstance>
-    nudgeForward, nudgeBackward, nudgeStrength, brake, brakeStrength, overlap, reset, resetMode;
+    nudgeForward, nudgeBackward, nudgeStrength,
+    brake, brakeStrength,
+    overlap,
+    reset, resetMode,
+    valueSlew,
+    thresholdMode,
+    thresholdWrap,
+    thresholdSkew,
+    thresholdZoom;
     
 
 
