@@ -22,19 +22,28 @@ TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, st
     rotationLayout2 = std::make_unique<SpinnerLayout>(audioProcessor, 1);
     rotationLayout3 = std::make_unique<SpinnerLayout>(audioProcessor, 2);
     
+    thresholdLayout = std::make_unique<ThresholdLayout>(audioProcessor);
+
     globalLayout = std::make_unique<GlobalControlsLayout>(audioProcessor);
     
     addAndMakeVisible(*presetLayout);
     addAndMakeVisible(*rotationLayout1);
     addAndMakeVisible(*rotationLayout2);
     addAndMakeVisible(*rotationLayout3);
+    addAndMakeVisible(*thresholdLayout);
+
     addAndMakeVisible(*globalLayout);
 
+    addAndMakeVisible(spinnerControlToggle);
+    spinnerControlToggle.addListener(this);
+    addAndMakeVisible(thresholdControlToggle);
+    thresholdControlToggle.addListener(this);
+
+
+    // overlap
+    setLabel(*this, overlapLabel, "Overlap", juce::Justification::centred);
     
-    addAndMakeVisible(overlapSlider);
-    overlapSlider.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
-    overlapSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 40, 20);
-   // overlapSlider.setLookAndFeel(&overlapLAF);
+    setSlider(*this, overlapSlider, overlapLAF);
     overlapAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, "overlap", overlapSlider);
     
 
@@ -44,22 +53,22 @@ TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, st
     updater.addAnimator(isoEnterToggle);
     updater.addAnimator(isoExitToggle);
  
-    setButton(*this, controlWindowToggle, laf);
-    controlWindowToggle.addListener(this);
     
 }
 
 TingeAudioProcessorEditor::~TingeAudioProcessorEditor()
 {
     controlWindowToggle.removeListener(this);
+    spinnerControlToggle.removeListener(this);
+    thresholdControlToggle.removeListener(this);
 }
 
 //==============================================================================
 void TingeAudioProcessorEditor::paint (juce::Graphics& g)
 {
-    // (Our component is opaque, so we must completely fill the background with a solid colour)
-    g.fillAll(juce::Colour(210, 210, 210));
-
+    g.setColour(Colors::backgroundFill);
+    g.fillAll();
+    
     auto bounds = getLocalBounds().toFloat();
     bounds.reduce(getMargin(), getMargin());
     float x = bounds.getX();
@@ -67,86 +76,103 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
     float width = bounds.getWidth();
     float height = bounds.getHeight();
 
-    juce::Path bgFillPath, bgTabPath;
+    juce::Path bgFillPath;
     float xCoords = (animationValue * width * 0.4f) + width * 0.6f;
     float margin = width * 0.02f;
-    bgFillPath.addRoundedRectangle(xCoords,
-                                   y + margin * 0.5f,
-                                   width * 0.4f,
-                                   height - margin,
-                                   margin);
     
-    g.setColour(juce::Colour(203, 203, 203));
+    juce::Rectangle<float> bgFillBounds = {xCoords,
+        y + margin * 0.5f,
+        width * 0.4f,
+        height - margin};
+    
+    float tabHeight = height * 0.05f;
+    float tabRightHeight = tabSelection ? 0.0f : tabHeight;
+    float tabLeftHeight = !tabSelection ? 0.0f : tabHeight;
+
+    bgFillPath.startNewSubPath(bgFillBounds.getTopLeft());
+    bgFillPath.lineTo(bgFillBounds.getTopRight());
+    
+    bgFillPath.lineTo(bgFillBounds.getBottomRight().x,
+                      bgFillBounds.getBottomRight().y - tabRightHeight);
+    bgFillPath.lineTo(bgFillBounds.getCentreX(),
+                      bgFillBounds.getY() + bgFillBounds.getHeight() - tabRightHeight);
+    
+    bgFillPath.lineTo(bgFillBounds.getCentreX(),
+                      bgFillBounds.getY() + bgFillBounds.getHeight() - tabHeight);
+    
+    bgFillPath.lineTo(bgFillBounds.getCentreX(),
+                      bgFillBounds.getY() + bgFillBounds.getHeight() - tabLeftHeight);
+    
+    bgFillPath.lineTo(bgFillBounds.getBottomLeft().x,
+                      bgFillBounds.getBottomLeft().y - tabLeftHeight);
+    
+    bgFillPath.closeSubPath();
+    bgFillPath = bgFillPath.createPathWithRoundedCorners(margin);
+
+    g.setColour(Colors::backgroundFillAlt);
     g.fillPath(bgFillPath);
-    g.setColour(juce::Colour(200, 200, 200));
+    g.setColour(Colors::backgroundFillAlt);
     g.strokePath(bgFillPath, juce::PathStrokeType(1.5f));
-
-    bgTabPath.addRoundedRectangle(xCoords - width * 0.04f,
-                                  margin + height * 0.2f,
-                                  width * 0.04f,
-                                  height * 0.08f,
-                                  margin/2,
-                                  margin/2,
-                                  true,
-                                  false,
-                                  true,
-                                  false);
-    
-    g.setColour(juce::Colour(203, 203, 203));
-    g.fillPath(bgTabPath);
-    g.setColour(juce::Colour(200, 200, 200));
-    g.strokePath(bgTabPath, juce::PathStrokeType(1.5f));
-
-    
-    
     
     float controlWidth = width * 0.4f;
-    float controlMargin = width * 0.025f;
     
-    overlapSlider.setBounds(x + margin,
-                            y + margin,
-                            height * 0.175f,
-                            height * 0.175f);
+    // overlap control
+    overlapLabel.setBounds(x,
+                           y + height * 0.125f,
+                           height * 0.125f,
+                           getFontSize() * 1.25f);
+    
+    overlapSlider.setBounds(x,
+                            y,
+                            height * 0.125f,
+                            height * 0.125f);
     overlapSlider.setMouseDragSensitivity(height * 0.25f);
-    
-    /*
-    presetLayout->setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - controlMargin * 0.5f + (margin/2),
-                             y + margin,
-                             controlWidth - margin/2,
-                             height * 0.15f);
-     */
+
     rotationLayout1->setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - (margin * 0.5f),
                                y + margin * 0.5f,
                                controlWidth,
-                               height * 0.25f);
+                               height * 0.3f);
 
 
     rotationLayout2->setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - (margin * 0.5f),
                                y + margin + height * 0.3f,
                                controlWidth,
-                               height * 0.25f);
+                               height * 0.3f);
     
     rotationLayout3->setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - (margin * 0.5f),
                                y + margin + height * 0.6f,
                                controlWidth,
-                               height * 0.25f);
+                               height * 0.3f);
+    
+    thresholdLayout->setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - (margin * 0.5f),
+                               y + margin,
+                               controlWidth,
+                               height);
+
     
     spinnerGraphics.setAnimation(animationValue);
     spinnerGraphics.setBounds(0,
                               0,
                               (int)(animationValue * width * 0.4f) + (width * 0.6f),
-                              height);
+                              height * 0.875f);
         
     globalLayout->setBounds(0,
-                            height * 0.875f,
+                            height * 0.9f,
                             (int)(animationValue * width * 0.4f) + (width * 0.6f),
                             height * 0.1f);
-    /*
-    controlWindowToggle.setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - controlMargin * 0.5f,
-    y,
-    width * 0.025f,
-    height * 0.05f);
-    */
+    
+    // control toggles
+    spinnerControlToggle.setBounds(xCoords,
+                                   (y + height * 0.95f) - (margin/2),
+                                   width * 0.2f,
+                                   height * 0.05f);
+    
+    
+    thresholdControlToggle.setBounds(xCoords + width * 0.2f,
+                                   (y + height * 0.95f) - (margin/2),
+                                   width * 0.2f,
+                                   height * 0.05f);
+     
 }
 
 void TingeAudioProcessorEditor::resized()
@@ -159,34 +185,28 @@ void TingeAudioProcessorEditor::resized()
 void TingeAudioProcessorEditor::timerCallback()
 {
     phases = phasesAtomic.load();
-
     for (int index = 0; index < 3; index++)
     {
-        spinnerGraphics.setPhase(index, phases[index]);
+        spinnerGraphics.setParams(index,
+                                  phases[index],
+                                  audioProcessor.params->opacity[0]->getSafe(),
+                                  audioProcessor.params->opacity[1]->getSafe(),
+                                  audioProcessor.params->opacity[2]->getSafe());
     }
     
     std::array<float, 16> heldNotes = noteValuesAtomic.load();
     spinnerGraphics.setNumThresholds(heldNotes);
-    spinnerGraphics.processThreshold(static_cast<MIDIProcessor::thresholdMode>(audioProcessor.params->thresholdMode->getSafe()));
-    spinnerGraphics.processAngles();
     
-    
-    for (int index = 0 ; index < 3; index++){
-
-        spinnerGraphics.setParams(index,
-                                  1,
-                                  1,
-                                  audioProcessor.params->weight[index]->getSafe());
-    }
-    
-    
+    spinnerGraphics.processThreshold(static_cast<MIDIProcessor::thresholdMode>(audioProcessor.params->thresholdMode->getSafe()),
+                                     audioProcessor.params->thresholdPhase->getSafe(),
+                                     audioProcessor.params->maxThreshold->getSafe());
+        
     spinnerGraphics.setOverlapIndex(audioProcessor.params->overlap->getSafe());
-    /*
-    overlapLAF.setColor(1, 1, 1,
-                        audioProcessor.params->weight[0]->getSafe(),
-                        audioProcessor.params->weight[1]->getSafe(),
-                        audioProcessor.params->weight[2]->getSafe());
-     */
+    
+    overlapLAF.setColor(audioProcessor.params->opacity[0]->getSafe(),
+                        audioProcessor.params->opacity[1]->getSafe(),
+                        audioProcessor.params->opacity[2]->getSafe());
+     
     overlapSlider.repaint();
 }
 

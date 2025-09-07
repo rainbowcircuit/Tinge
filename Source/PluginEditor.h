@@ -17,8 +17,10 @@
 #include "Presets.h"
 #include "SpinnerControl.h"
 #include "MiscControl.h"
+#include "ThresholdControl.h"
 #include "GraphicsHelper.h"
 #include "UserInterfaceLookAndFeel.h"
+#include "MiscGraphics.h"
 //==============================================================================
 /**
 */
@@ -37,6 +39,17 @@ public:
     //==============================================================================
     void timerCallback() override;
     
+    void mouseDown(const juce::MouseEvent &m) override
+    {
+        if (isoView){
+            isoEnterToggle.start();
+            isoView = false;
+        } else {
+            isoExitToggle.start();
+            isoView = true;
+        }
+    }
+    
     void buttonClicked(juce::Button *b) override
     {
         if (b == &controlWindowToggle)
@@ -49,16 +62,43 @@ public:
                 isoView = true;
             }
         }
+        
+        if(b == &spinnerControlToggle)
+        {
+            
+            rotationLayout1->setVisible(true);
+            rotationLayout2->setVisible(true);
+            rotationLayout3->setVisible(true);
+            thresholdLayout->setVisible(false);
+            tabSelection = true;
+        }
+        
+        if(b == &thresholdControlToggle)
+        {
+            rotationLayout1->setVisible(false);
+            rotationLayout2->setVisible(false);
+            rotationLayout3->setVisible(false);
+            thresholdLayout->setVisible(true);
+            tabSelection = false;
+        }
+
     }
      
     void buttonStateChanged(juce::Button *) override {}
         
 private:
-    juce::LookAndFeel_V4 laf;
-    juce::TextButton controlWindowToggle;
+    juce::Label overlapLabel;
+    MiscLookAndFeel overlapLAF { MiscLAF::Overlap };
+    juce::Slider overlapSlider;
+
+    juce::TextButton controlWindowToggle,
+    spinnerControlToggle,
+    thresholdControlToggle;
     
-    bool isoView = false;
+    
+    bool isoView = false, tabSelection = true;
     float animationValue;
+    
     
     juce::VBlankAnimatorUpdater updater { this };
     
@@ -84,9 +124,6 @@ private:
     std::array<float, 3> phases;
 
     std::atomic<std::array<float, 16>>& noteValuesAtomic;
-
-  //  DialGraphics overlapLAF { 3 };
-    juce::Slider overlapSlider, hueSlider, offsetSlider;
     
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
     overlapAttachment;
@@ -97,17 +134,10 @@ private:
     std::unique_ptr<PresetControlsLayout> presetLayout;
 
     std::unique_ptr<SpinnerLayout> rotationLayout1, rotationLayout2, rotationLayout3;
+    std::unique_ptr<ThresholdLayout> thresholdLayout;
+
     std::unique_ptr<GlobalControlsLayout> globalLayout;
     TingeAudioProcessor& audioProcessor;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TingeAudioProcessorEditor)
-};
-
-class controlWindowLookAndFeel : public juce::LookAndFeel_V4
-{
-public:
-    void drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
-    {
-
-    }
 };

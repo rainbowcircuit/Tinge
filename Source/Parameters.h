@@ -27,19 +27,19 @@ private:
 public:
     juce::AudioProcessorValueTreeState apvts;
 
-    std::array<std::unique_ptr<ParameterInstance>, 8>
-    rate, phase, weight;
+    std::array<std::unique_ptr<ParameterInstance>, 3>
+    rate, phase, curve, opacity;
     
     std::unique_ptr<ParameterInstance>
     nudgeForward, nudgeBackward, nudgeStrength,
     brake, brakeStrength,
+    hold,
     overlap,
     reset, resetMode,
     valueSlew,
     thresholdMode,
-    thresholdWrap,
-    thresholdSkew,
-    thresholdZoom;
+    thresholdPhase,
+    maxThreshold;
     
 
 

@@ -197,9 +197,9 @@ public:
         this->index = index;
     }
     
-    void setColor(int colorA, int colorB, int colorC, float opacityA, float opacityB, float opacityC)
+    void setColor(float opacityA, float opacityB, float opacityC)
     {
-        p.setColors(colorA, colorB, colorC, opacityA, opacityB, opacityC);
+        p.setColors(opacityA, opacityB, opacityC);
     }
     
     void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider) override

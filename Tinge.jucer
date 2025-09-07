@@ -6,6 +6,10 @@
               companyEmail="hey@rainbowcircuit.co" userNotes="New ways around MIDI with Daedelus."
               pluginFormats="buildAU,buildStandalone,buildVST3">
   <MAINGROUP id="PYvzWc" name="Tinge">
+    <FILE id="hiKpEW" name="ThresholdControl.cpp" compile="1" resource="0"
+          file="Source/ThresholdControl.cpp"/>
+    <FILE id="n3WjtZ" name="ThresholdControl.h" compile="0" resource="0"
+          file="Source/ThresholdControl.h"/>
     <GROUP id="{18F70CB9-6E6C-CF82-B862-86AA61F7A441}" name="Utility">
       <FILE id="YCTSFO" name="Parameters.cpp" compile="1" resource="0" file="Source/Parameters.cpp"/>
       <FILE id="G00t5C" name="Parameters.h" compile="0" resource="0" file="Source/Parameters.h"/>
@@ -25,6 +29,8 @@
     </GROUP>
     <GROUP id="{3973E95F-5A08-34B3-D8A4-3EFF8421C323}" name="Source">
       <GROUP id="{D3C448FB-8B78-C77E-2666-449CA93B1A21}" name="Editor">
+        <FILE id="dwsG4s" name="MainControl.h" compile="0" resource="0" file="Source/MainControl.h"/>
+        <FILE id="dOj5bI" name="MiscGraphics.h" compile="0" resource="0" file="Source/MiscGraphics.h"/>
         <FILE id="pUeG92" name="GraphicsHelper.h" compile="0" resource="0"
               file="Source/GraphicsHelper.h"/>
         <FILE id="mtIeNx" name="EditableTextSlider.h" compile="0" resource="0"

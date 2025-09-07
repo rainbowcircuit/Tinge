@@ -20,17 +20,21 @@ public:
     void holdPitches(juce::MidiBuffer &m);
     int nextAvailableIndex = 0;
     
+    void setHold(juce::MidiBuffer &m, bool hold);
+    
     std::array<float, 16> getheldPitches();
     int getNumHeldNotes();
     
     void noteOn(juce::MidiBuffer& midiBuffer, int channel, int samplePosition, int noteNumber, int noteVelocity);
     void noteOff(juce::MidiBuffer& midiBuffer, int channel, int samplePosition, int noteNumber);
 
-    void processInteraction(int mode)
+    void processInteraction(int thresholdMode, float thresholdPhase, float maxThreshold)
     {
         setNumThresholds(getheldPitches());
-        processThreshold(static_cast<thresholdMode>(mode));
-        processAngles();
+        processThreshold(static_cast<enum thresholdMode>(thresholdMode),
+                         thresholdPhase,
+                         maxThreshold);
+
     }
         
     void setScaling(int noteScale, float velocityScale, float controllerScale, float slewAmount)
@@ -55,10 +59,10 @@ public:
         {
             const bool triggerCondition = getTriggerCondition(i, overlap);
             
-            float weightA = ((float)rotationValue[0].threshold[i] * rotationValue[0].opacity);
-            float weightB = ((float)rotationValue[1].threshold[i] * rotationValue[1].opacity);
-            float weightC = ((float)rotationValue[2].threshold[i] * rotationValue[2].opacity);
-            float thresholdWeight = (weightA + weightB + weightC)/3.0f;
+            float weightA = ((float)rotationValue[0].threshold[i] * rotationValue[0].opacity)/3.0f;
+            float weightB = ((float)rotationValue[1].threshold[i] * rotationValue[1].opacity)/3.0f;
+            float weightC = ((float)rotationValue[2].threshold[i] * rotationValue[2].opacity)/3.0f;
+            float thresholdWeight = weightA + weightB + weightC;
             
             int noteScaled = noteValue[i].noteNumber + (noteScale * thresholdWeight);
             const int currentNote = juce::jlimit(0, 127, noteScaled);
@@ -71,6 +75,7 @@ public:
             currentController = (int)slewValue(currentController, prevController, slewAmount);
             
             int mpeChannel = i + 1;
+            
             if (triggerCondition)
             {
                 if (!noteValue[i].isOn || noteValue[i].activeNoteNumber != currentNote)
@@ -119,7 +124,7 @@ public:
     void setSpinnerValues(int index, float phase, float opacity)
     {
         rotationValue[index].phase = phase;
-        rotationValue[index].opacity = opacity;
+        rotationValue[index].opacity = opacity/100.0f;
 
     }
     
@@ -138,8 +143,8 @@ private:
     double sampleRate;
     int numNoteOn = 0;
     int overlap = 0;
-    float noteScale, velocityScale, controllerScale, prevController, slewAmount;
-    
+    float noteScale, velocityScale, controllerScale, prevController = 0.0f, slewAmount;
+    bool hold, midiHold;
     struct NoteValue
     {
         int activeNoteNumber;
@@ -147,6 +152,7 @@ private:
         int noteVelocity;
         bool isOn = false;
         bool isAvailable = true;
+        bool isHeld = false;
     };
 
     std::array<NoteValue, 16> noteValue;
@@ -157,29 +163,33 @@ private:
 class Spinner
 {
 public:
-    void setSampleRate(double sampleRate);
+    void prepareToPlay(double sampleRate, int samplesPerBlock);
     void reset();
     void resetMode(int resetMode, int numHeldNotes, bool manualReset);
 
-    void setRate(int rateBPM, float rateFree, bool isSynced, float phaseOffset, float rateScale);
-    void tempo(juce::AudioPlayHead* playhead);
+    void setRate(int rateBPM, float rateFree, bool isSynced, float phase, float curve);
+    void playhead(juce::AudioPlayHead* playhead);
 
     void nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, float brakeStrength, int brake);
 
     void accumulate();
     float getPhase();
+    float getCurvedPhase(float phase);
+    float getWrappedPhase(float phase);
     bool getDirection();
     
     
 private:
     LowPassGate forwardLPG, backwardLPG, brakeLPG;
     double sampleRate;
-    float phase = 0.0f, previousPhase = 0.0f, phaseOffset = 0.0f, rateScale = 1.0f;
+    int samplesPerBlock;
+    float phase = 0.0f, previousPhase = 0.0f, phaseOffset = 0.0f, rateScale = 1.0f, curve = 1.0f;
     float bpm = 120.0f;
     int rateBPM = 0;
     float rateFree = 0.0f;
     bool rateMode = false, holdAccum = false, manualReset = false, previousManualReset = false;
-    
+    bool prevIsPlaying = false;
+
     
     std::array <double, 7> rateScaleMultiplier =
     {

@@ -20,6 +20,7 @@ void GlobalControlsLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Bu
     float width = bounds.getWidth();
     float height = bounds.getHeight();
 
+    float state = button.getToggleState();
     switch(lookAndFeel)
     {
         case GlobalControlsLAF::NudgeForward:
@@ -42,8 +43,19 @@ void GlobalControlsLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Bu
             drawReset(g, x, y, width);
             break;
         }
+        case GlobalControlsLAF::Hold:
+        {
+            drawHold(g, x, y, width, state);
+            break;
+        }
     }
 }
+
+void GlobalControlsLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider)
+{
+    drawJog(g, x, y, width, sliderPosProportional);
+}
+
 
 void GlobalControlsLookAndFeel::drawNudge(juce::Graphics &g, float x, float y, float size, bool drawNudgeBack)
 {
@@ -67,7 +79,7 @@ void GlobalControlsLookAndFeel::drawNudge(juce::Graphics &g, float x, float y, f
             graphicPath.applyTransform(mirrorTransform);
         }
         
-        g.setColour(juce::Colour(40, 40, 40));
+        g.setColour(Colors::graphicBlackAlt);
         g.strokePath(graphicPath, juce::PathStrokeType(2));
     }
 }
@@ -80,9 +92,25 @@ void GlobalControlsLookAndFeel::drawBrake(juce::Graphics &g, float x, float y, f
     juce::Path leftCircle, rightCircle;
     juce::Point centerCoords = { x + width/2, y + height/2 };
     
-    leftCircle.addCentredArc(centerCoords.x - offset, centerCoords.y, radius, radius, 0.0f, 0.0f, 6.28f, true);
-    rightCircle.addCentredArc(centerCoords.x + offset, centerCoords.y, radius, radius, 0.0f, 0.0f, 6.28f, true);
-    g.setColour(juce::Colour(40, 40, 40));
+    leftCircle.addCentredArc(centerCoords.x - offset,
+                             centerCoords.y,
+                             radius,
+                             radius,
+                             0.0f,
+                             0.0f,
+                             6.28f,
+                             true);
+    
+    rightCircle.addCentredArc(centerCoords.x + offset,
+                              centerCoords.y,
+                              radius,
+                              radius,
+                              0.0f,
+                              0.0f,
+                              6.28f,
+                              true);
+    
+    g.setColour(Colors::graphicBlackAlt);
     g.fillPath(leftCircle);
     g.fillPath(rightCircle);
 
@@ -94,35 +122,26 @@ void GlobalControlsLookAndFeel::drawBrake(juce::Graphics &g, float x, float y, f
 
 void GlobalControlsLookAndFeel::drawReset(juce::Graphics &g, float x, float y, float size)
 {
+    
     juce::Rectangle<float> graphicBounds = {x, y + size * 0.05f, size, size * 0.9f };
     float reduceAmount = (size * 0.075f) + (lpgValue * size * 0.075f);
     graphicBounds.reduce(reduceAmount, reduceAmount);
-    g.setColour(juce::Colour(40, 40, 40));
+    g.setColour(Colors::graphicBlackAlt);
     
     float triangleSize = size * 0.25f;
-    juce::Path leftPath, rightPath;
-    leftPath.startNewSubPath(graphicBounds.getBottomLeft());
-    leftPath.lineTo(graphicBounds.getTopLeft());
-    leftPath.lineTo(graphicBounds.getTopRight().x - triangleSize/2, graphicBounds.getTopRight().y);
-    leftPath = leftPath.createPathWithRoundedCorners(size * 0.15f);
-
-    
-    drawTriangle(g, triangleSize, {graphicBounds.getTopRight().x - triangleSize/2, graphicBounds.getTopRight().y }, 1.57f);
+    juce::Path leftPath, middlePath;
+    leftPath.startNewSubPath(graphicBounds.getTopLeft());
+    leftPath.lineTo(graphicBounds.getBottomLeft());
     g.strokePath(leftPath, juce::PathStrokeType(2));
-    
-    rightPath.startNewSubPath(graphicBounds.getTopRight().x,
-                              graphicBounds.getTopRight().y + triangleSize);
-    rightPath.lineTo(graphicBounds.getBottomRight());
-    rightPath.lineTo(graphicBounds.getBottomLeft().x + triangleSize,
-                     graphicBounds.getBottomLeft().y);
-    rightPath = rightPath.createPathWithRoundedCorners(size * 0.15f);
-    
+
+    middlePath.startNewSubPath(graphicBounds.getX() + triangleSize , graphicBounds.getCentreY());
+    middlePath.lineTo(graphicBounds.getX() + graphicBounds.getWidth() , graphicBounds.getCentreY());
     drawTriangle(g, triangleSize,
-                 { graphicBounds.getBottomLeft().x + triangleSize,
-                graphicBounds.getBottomLeft().y },
+                 { graphicBounds.getX() + triangleSize,
+                graphicBounds.getCentreY() },
                  4.71f);
 
-    g.strokePath(rightPath, juce::PathStrokeType(2));
+    g.strokePath(middlePath, juce::PathStrokeType(2));
 
 }
 
@@ -139,11 +158,77 @@ void GlobalControlsLookAndFeel::drawTriangle(juce::Graphics& g, float size, juce
     g.fillPath(trianglePath);
 }
 
+void GlobalControlsLookAndFeel::drawJog(juce::Graphics &g, float x, float y, float size, float position)
+{
+    float pi = juce::MathConstants<float>::pi;
+    float dialStart = 1.25f * pi;
+    float dialEnd = 2.75f * pi;
+    float sliderPositionScaled = 2.0f + (1.0f - position);
+    float dialPositionInRadians = dialStart + sliderPositionScaled * (dialEnd - dialStart);
+    
+    juce::Path dialBodyPath, dialDotPath, dialOutlinePath;
+    float dialOutlineRadius = (size * 0.9f)/2;
+    float dialBodyRadius = (size * 0.75f)/2;
+    float dialDotRadius = (size * 0.45f)/2;
+
+    dialOutlinePath.addCentredArc(x + size/2, y + size/2,
+                                  dialOutlineRadius, dialOutlineRadius,
+                               0.0f, dialStart, dialEnd, true);
+    g.setColour(Colors::graphicBlackAlt);
+    g.strokePath(dialOutlinePath, juce::PathStrokeType(1.5f));
+    
+    //==============================================================================
+    // dial body
+    dialBodyPath.addCentredArc(x + size/2, y + size/2,
+                               dialBodyRadius, dialBodyRadius,
+                               0.0f, 0.0f, 6.28f, true);
+    g.setColour(Colors::graphicBlackAlt);
+    g.fillPath(dialBodyPath);
+
+    //==============================================================================
+    // dial dot
+    juce::Point<float> outlineCoords = {x + size/2 + std::sin(dialPositionInRadians) * dialDotRadius,
+        x + size/2 + std::cos(dialPositionInRadians) * dialDotRadius};
+    juce::Point<float> startCoords = {x + size/2 + std::sin(dialStart) * dialDotRadius,
+        x + size/2 + std::cos(dialStart) * dialDotRadius};
+
+    dialDotPath.addCentredArc(outlineCoords.x, outlineCoords.y,
+                              1.5, 1.5, 0.0f, 0.0f, pi * 2, true);
+    
+    g.setColour(Colors::backgroundFill);
+    g.fillPath(dialDotPath);
+}
+
+void GlobalControlsLookAndFeel::drawHold(juce::Graphics &g, float x, float y, float size, bool state)
+{
+    for (int i = 0; i < 10; i++)
+    {
+        float sizeIncr = (size/10) * (i * (1.0f - lpgValue));
+        juce::Point<float> topPoint = { x + sizeIncr, y };
+        juce::Point<float> botPoint = { x + sizeIncr, y + size };
+        
+        juce::Path graphicPath;
+        graphicPath.startNewSubPath(topPoint);
+        graphicPath.lineTo(botPoint);
+        
+        if (state){
+            float centerX = x + size * 0.25f;
+            juce::AffineTransform mirrorTransform =
+            juce::AffineTransform::translation(-centerX, 0.0f)
+                .scaled(-1.0f, 1.0f)
+                .translated(centerX, 0.0f);
+            graphicPath.applyTransform(mirrorTransform);
+        }
+        
+        g.setColour(Colors::graphicBlackAlt);
+        g.strokePath(graphicPath, juce::PathStrokeType(2));
+    }
+}
+
 void GlobalControlsLookAndFeel::setLPGValue(float lpgValue)
 {
     this->lpgValue = lpgValue;
 }
-
 
 
 
@@ -163,9 +248,19 @@ GlobalControlsLayout::GlobalControlsLayout(TingeAudioProcessor &p) : audioProces
     setButton(*this, brakeButton, brakeLAF);
     brakeButton.addListener(this);
 
+    setLabel(*this, jogLabel, "Jog", juce::Justification::centred);
+    setSlider(*this, jogSlider, jogLAF);
+    
     setLabel(*this, resetLabel, "Reset", juce::Justification::centred);
     setButton(*this, resetButton, resetLAF);
     resetButton.addListener(this);
+    
+ //   setLabel(*this, resetLabel, "Reset", juce::Justification::centred);
+    setButton(*this, holdButton, holdLAF);
+    holdButton.addListener(this);
+    holdButton.setToggleable(true);
+    holdButton.setClickingTogglesState(true);
+    holdButton.setToggleState(false, juce::dontSendNotification);
     
     nudgeForwardSlew.setSampleRate(60);
     nudgeForwardSlew.setEnvelopeSlew(240, 240);
@@ -190,49 +285,82 @@ GlobalControlsLayout::~GlobalControlsLayout()
 
 void GlobalControlsLayout::resized()
 {
-    auto bounds = getLocalBounds().toFloat();
+    auto bounds = getLocalBounds();
     float x = bounds.getX();
     float y = bounds.getY();
     float width = bounds.getWidth();
     float height = bounds.getHeight();
 
     float buttonSize = height * 0.75f;
+    float margin = width * 0.05f;
     
-    nudgeLabel.setBounds(x + width * 0.05f,
-                         height * 0.75f,
-                         width * 0.15f,
-                         height * 0.25f);
+    // nudge
+    nudgeLabel.setBounds(x + buttonSize/2,
+                         height * 0.775f,
+                         buttonSize * 2.0f,
+                         getFontSize());
     
-    nudgeBackwardButton.setBounds(x + width * 0.05f,
+    nudgeBackwardButton.setBounds(x + buttonSize/2,
                                  y + height * 0.05f,
                                  buttonSize,
                                  buttonSize);
     
-    nudgeForwardButton.setBounds(x + width * 0.2f,
+    nudgeForwardButton.setBounds((x + buttonSize/2) + buttonSize,
                                  y + height * 0.05f,
                                  buttonSize,
                                  buttonSize);
 
-    brakeLabel.setBounds(x + width * 0.4f,
-                         height * 0.75f,
-                         width * 0.15f,
-                         height * 0.25f);
-
-    brakeButton.setBounds(x + width * 0.4f,
+    // brake
+    brakeLabel.setBounds((x + buttonSize/2) + buttonSize * 2.0f,
+                         height * 0.775f,
+                         buttonSize * 2,
+                         getFontSize());
+    
+    brakeButton.setBounds((x + buttonSize/2) + buttonSize * 2.0f,
                           y + height * 0.05f,
                           buttonSize * 2,
                           buttonSize);
 
-    resetLabel.setBounds(x + width * 0.6f,
-                         height * 0.75f,
-                         width * 0.15f,
-                         height * 0.25f);
+    // jog
+    jogLabel.setBounds((x + buttonSize/2) + buttonSize * 4.0f,
+                         height * 0.775f,
+                         buttonSize,
+                         getFontSize());
 
-    resetButton.setBounds(x + width * 0.6f,
+    
+    jogSlider.setBounds((x + buttonSize/2) + buttonSize * 4.0f,
+                        height * 0.05f,
+                        buttonSize,
+                        buttonSize);
+
+    // reset
+    resetLabel.setBounds(x + width - margin - buttonSize,
+                         height * 0.775f,
+                         buttonSize,
+                         getFontSize());
+
+    resetButton.setBounds(x + width - margin - buttonSize,
                           y + height * 0.05f,
                           buttonSize,
                           buttonSize);
+    
+    holdButton.setBounds(x + width - margin - buttonSize * 2,
+                          y + height * 0.05f,
+                          buttonSize,
+                          buttonSize);
+
 }
+
+void GlobalControlsLayout::buttonClicked(juce::Button* b)
+{
+    if (b == &holdButton)
+    {
+        bool currentHoldValue = (bool)audioProcessor.params->hold->get();
+        bool hold = !currentHoldValue;
+        audioProcessor.params->apvts.getParameter("hold")->setValueNotifyingHost(hold);
+    }
+}
+
 
 void GlobalControlsLayout::buttonStateChanged(juce::Button* b)
 {
@@ -250,15 +378,16 @@ void GlobalControlsLayout::buttonStateChanged(juce::Button* b)
         
     } else if (b == &brakeButton)
     {
-        float nudgeValue = b->isDown() ? 1.0f : 0.0f;
+        float brake = b->isDown() ? 1.0f : 0.0f;
         brakeSlew.triggerEnvelope(b->isDown());
-        audioProcessor.params->apvts.getParameter("brake")->setValueNotifyingHost(nudgeValue);
+        audioProcessor.params->apvts.getParameter("brake")->setValueNotifyingHost(brake);
         
     } else if (b == &resetButton)
     {
-        float nudgeValue = b->isDown() ? 1.0f : 0.0f;
+        float reset = b->isDown() ? 1.0f : 0.0f;
         resetSlew.triggerEnvelope(b->isDown());
-        audioProcessor.params->apvts.getParameter("reset")->setValueNotifyingHost(nudgeValue);
+        audioProcessor.params->apvts.getParameter("reset")->setValueNotifyingHost(reset);
+        
     }
 }
 

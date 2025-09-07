@@ -14,8 +14,9 @@ public:
     
     //  ==============================================================================
     void setWheelPosition();
-    juce::Path generateWheelPath(juce::Graphics& g, int index, bool isSum);
-    void drawThreshold(juce::Graphics& g, int x, int y, int width, int height);
+    juce::Path generateWheelPath(juce::Graphics& g, int index);
+    juce::Path generateSegmentedWheelPath(juce::Graphics& g, int startIndex, int endIndex);
+    void drawThreshold(juce::Graphics& g);
     void setThresholdSlew(float slewTime);
     //==============================================================================
 
@@ -23,18 +24,139 @@ public:
     void setOverlapColours();
     //  ==============================================================================
 
-    void setParams(int index, int ratio, int colorIndex, float opacity);
-    void setPhase(int index, float phaseValue);
+    void setParams(int index, float phase, float opacity1, float opacity2, float opacity3);
     void setAnimation(float value);
     void setAnimationValue(float animationValue);
     
+    std::array<float, 2> clipValues(float startA, float endA, float startB, float endB, float startC, float endC)
+    {
+        std::array<float,2> clippedAB = clipValues(startA, endA, startB, endB);
+        float s = clippedAB[0];
+        float e = clippedAB[1];
+        if (s > e)
+            e -= 1.0f;
+
+        std::array<float,2> clippedABC = clipValues(clippedAB[0], clippedAB[1], startC, endC);
+        return clippedABC;
+
+    }
+    
+    /*
+    std::array<float, 2> clipValues(float startA, float endA, float startB, float endB)
+    {
+        std::array<float, 2> clipped = { 0.0f, 0.5f };
+        
+        bool wrapsA = startA > endA;
+        bool wrapsB = startB > endB;
+
+        if (!wrapsA && !wrapsB)
+        {
+            float s = std::max(startA, startB);
+            float e = std::min(endA, endB);
+            if (s < e)
+                clipped = { s, e };
+            
+        } else if (wrapsA && !wrapsB)
+        {
+            float s1 = std::max(startA, startB);
+            float e1 = std::min(1.0f,   endB);
+            if (s1 < e1)
+                clipped = { s1, e1 };
+
+            float s2 = std::max(0.0f, startB);
+            float e2 = std::min(endA, endB);
+            if (s2 < e2)
+                clipped = { s2, e2 };
+            
+        } else if (!wrapsA && wrapsB) {
+            float s1 = std::max(startA, startB);
+            float e1 = std::min(endA,   1.0f);
+            if (s1 < e1)
+                clipped = { s1, e1 };
+
+            float s2 = std::max(startA, 0.0f);
+            float e2 = std::min(endA,   endB);
+            if (s2 < e2)
+                clipped = { s2, e2 };
+            
+        } else {
+            float s = std::max(startA, startB);
+            float e = std::min(endA, endB);
+            if (s > e)
+                e += 1.0f;
+            
+            clipped = { s, e };
+            
+        }
+        return clipped;
+    }
+    */
+    
+    std::array<float, 2> clipValues(float startA, float endA, float startB, float endB)
+    {
+        std::array<float, 2> clipped = { 0.0f, 0.0f };
+
+        auto normalize = [](float v) {
+            if (v < 0.0f) return v + 1.0f;
+            if (v >= 1.0f) return v - 1.0f;
+            return v;
+        };
+
+        // Handle wrap-around by mapping everything to [0,2) range
+        float sA = startA;
+        float eA = (endA < startA) ? endA + 1.0f : endA;
+        float sB = startB;
+        float eB = (endB < startB) ? endB + 1.0f : endB;
+
+        // Intersection
+        float s = std::max(sA, sB);
+        float e = std::min(eA, eB);
+
+        if (s < e) {
+            clipped[0] = normalize(s);
+            clipped[1] = normalize(e);
+        } else {
+            // No overlap, return empty interval
+            clipped[0] = clipped[1] = 0.0f;
+        }
+
+        return clipped;
+    }
+
+    
+    juce::Path createWheelPath(juce::Graphics &g, juce::Rectangle<float> bounds, float startAngle, float endAngle)
+    {
+        
+        float x = bounds.getX();
+        float y = bounds.getY();
+        float width = bounds.getWidth();
+        float height = bounds.getHeight();
+
+        juce::Path wheelPath;
+        float radius = width/2;
+        float twopi = juce::MathConstants<float>::twoPi;
+
+        wheelPath.startNewSubPath(x + width/2, y + height/(isometricSkew)); // center
+        wheelPath.addCentredArc(x + width/2,
+                                y + height/(isometricSkew),
+                                radius,
+                                radius/(isometricSkew),
+                                0.0f,
+                                startAngle * twopi,
+                                endAngle * twopi);
+        
+        wheelPath.closeSubPath();
+        wheelPath = wheelPath.createPathWithRoundedCorners(1);
+
+    return wheelPath;
+    }
     
 
 private:
     void timerCallback() override;
 
     LowPassGate thresholdSlew;
-    
+    juce::Rectangle<float> sumBounds;
     juce::Colour colorA, colorB, colorC, colorAB, colorBC, colorAC, colorABC;
     
     int overlapIndex;

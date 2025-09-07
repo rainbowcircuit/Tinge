@@ -88,7 +88,7 @@ void TingeAudioProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     for (int index = 0; index < 3; index++){
         rotation[index].reset();
-        rotation[index].setSampleRate(sampleRate);
+        rotation[index].prepareToPlay(sampleRate, samplesPerBlock);
     }
     midiProcessor.prepareToPlay(sampleRate);
 }
@@ -129,6 +129,8 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
         buffer.clear (i, 0, buffer.getNumSamples());
     
     midiProcessor.holdPitches(midiMessages);
+    midiProcessor.setHold(midiMessages, (bool)params->hold->get());
+    
     heldPitches = midiProcessor.getheldPitches();
     
     midiProcessor.setOverlap(params->overlap->get());
@@ -136,13 +138,13 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
 
 
     for (int i = 0; i < 3; i++){
-        rotation[i].tempo(getPlayHead());
+        rotation[i].playhead(getPlayHead());
         
         rotation[i].setRate(0,
                             params->rate[i]->get(),
                             false,
                             params->phase[i]->get(),
-                            1.0f);
+                            params->curve[i]->get());
         
         rotation[i].nudge(params->nudgeStrength->get(),
                           params->nudgeForward->get(),
@@ -161,11 +163,13 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
         
         midiProcessor.setSpinnerValues(i,
                                        rotation[i].getPhase(), // real time rotation
-                                       params->weight[i]->get());
+                                       params->opacity[i]->get());
         
         phases[i] = rotation[i].getPhase(); // for atomic
     }
-    midiProcessor.processInteraction(params->thresholdMode->get());
+    midiProcessor.processInteraction(params->thresholdMode->get(),
+                                     params->thresholdPhase->get(),
+                                     params->maxThreshold->get());
     midiProcessor.notePlayback(midiMessages);
     
     phasesAtomic.store(phases);

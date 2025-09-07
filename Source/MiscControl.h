@@ -15,20 +15,23 @@
 #include "GraphicsHelper.h"
 
 
-enum class GlobalControlsLAF { NudgeForward, NudgeBackward, Brake, Reset };
+enum class GlobalControlsLAF { NudgeForward, NudgeBackward, Brake, Reset, Jog, Hold};
 
 class GlobalControlsLookAndFeel : public juce::LookAndFeel_V4, DrawHelper
 {
 public:
     GlobalControlsLookAndFeel(GlobalControlsLAF l) : lookAndFeel(l) {}
     void drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
-    
+    void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider) override;
+
     //==============================================================================
     void drawNudge(juce::Graphics &g, float x, float y, float size, bool drawNudgeBack);
     void drawBrake(juce::Graphics &g, float x, float y, float width, float height);
     void drawReset(juce::Graphics &g, float x, float y, float size);
     void drawTriangle(juce::Graphics& g, float size, juce::Point<float> endCoords, float rotation);
-    
+    void drawJog(juce::Graphics &g, float x, float y, float size, float position);
+    void drawHold(juce::Graphics &g, float x, float y, float size, bool state);
+
     //==============================================================================
     void setLPGValue(float lpgValue);
 
@@ -47,7 +50,7 @@ public:
 
     void paint(juce::Graphics& g) override {}
     void resized() override;
-    void buttonClicked(juce::Button* b) override {}
+    void buttonClicked(juce::Button* b) override;
     void buttonStateChanged(juce::Button* b) override;
 
 private:
@@ -59,12 +62,14 @@ private:
     nudgeForwardLAF { GlobalControlsLAF::NudgeForward },
     nudgeBackwardLAF { GlobalControlsLAF::NudgeBackward },
     brakeLAF { GlobalControlsLAF::Brake },
-    resetLAF { GlobalControlsLAF::Reset };
+    resetLAF { GlobalControlsLAF::Reset },
+    jogLAF { GlobalControlsLAF::Jog },
+    holdLAF { GlobalControlsLAF::Hold };
 
-    juce::Label nudgeLabel, brakeLabel, resetLabel;
+    juce::Label nudgeLabel, brakeLabel, resetLabel, jogLabel;
     
-    juce::Slider nudgeStrengthSlider, brakeStrengthSlider;
-    juce::TextButton nudgeBackwardButton, nudgeForwardButton, brakeButton, resetButton;
+    juce::Slider jogSlider;
+    juce::TextButton nudgeBackwardButton, nudgeForwardButton, brakeButton, resetButton, holdButton;
     
     TingeAudioProcessor& audioProcessor;
 };

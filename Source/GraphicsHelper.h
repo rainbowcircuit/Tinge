@@ -22,7 +22,7 @@ public:
         slider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
         slider.setLookAndFeel(&lookAndFeel);
     }
-    
+        
     void setButton(juce::Component& parent, juce::TextButton& button, juce::LookAndFeel& lookAndFeel)
     {
         parent.addAndMakeVisible(button);
@@ -60,6 +60,25 @@ public:
         return margin;
     }
     
+    juce::Label* createTextBox(juce::Slider& s)
+    {
+        juce::LookAndFeel_V4 laf;
+        auto l = laf.createSliderTextBox(s);
+        
+        l->setFont(juce::FontOptions(fontSize, juce::Font::plain));
+        l->setJustificationType(juce::Justification::centred);
+        l->setColour(juce::Label::textColourId, Colors::graphicBlack);
+
+        l->onEditorShow = [l]()
+        {
+            if(auto* editor = l->getCurrentTextEditor())
+            {
+                editor->setJustification(juce::Justification::centred);
+            }
+        };
+        return l;
+    }
+
 private:
     float fontSize = 12.0f;
     int margin = 5;
@@ -108,4 +127,21 @@ public:
         }
         g.restoreState();
     }
+    
+    void drawQuadrupleOverlap(juce::Graphics& g, juce::Path& pathA, juce::Path& pathB, juce::Path& pathC, juce::Path& pathD, juce::Colour color, bool strokePath)
+    {
+        g.saveState();
+        g.reduceClipRegion(pathA);
+        g.reduceClipRegion(pathB);
+        g.reduceClipRegion(pathC);
+        g.reduceClipRegion(pathD);
+        g.setColour(color);
+        g.fillAll();
+        if (strokePath){
+            g.setColour(Colors::backgroundFill);
+            g.strokePath(pathA, juce::PathStrokeType(1.5f));
+        }
+        g.restoreState();
+    }
+
 };

@@ -15,10 +15,30 @@ void MIDIProcessor::prepareToPlay(double sampleRate)
 void MIDIProcessor::holdPitches(juce::MidiBuffer &buffer)
 {
     juce::MidiBuffer filteredBuffer;
+    
+    if (!hold)
+    {
+        for (auto& note : noteValue)
+        {
+            if (note.isHeld)
+            {
+                auto noteOffMessage = juce::MidiMessage::noteOff(1, note.noteNumber);
+                filteredBuffer.addEvent(noteOffMessage, 0);
+                
+                note.noteNumber = -1;
+                note.noteVelocity = 0;
+                note.isAvailable = true;
+                note.isHeld = false;
+            }
+        }
+    }
+    
+    
+    
     for (const auto metadata : buffer)
     {
         const auto message = metadata.getMessage();
-
+        bool addToBuffer = true;
         if (message.isNoteOn())
         {
             for (auto& note : noteValue)
@@ -38,16 +58,44 @@ void MIDIProcessor::holdPitches(juce::MidiBuffer &buffer)
             {
                 if (!note.isAvailable && note.noteNumber == message.getNoteNumber())
                 {
-                    note.noteNumber = -1;
-                    note.noteVelocity = message.getVelocity();
-                    note.isAvailable = true;
+                    if (hold)
+                    {
+                        note.isHeld = true;
+                        addToBuffer = false;
+                        
+                    } else {
+                            note.noteNumber = -1;
+                            note.noteVelocity = message.getVelocity();
+                            note.isAvailable = true;
+                            note.isHeld = false;
+                    }
                     break;
                 }
             }
         }
+        
+        if(addToBuffer)
+        {
+            filteredBuffer.addEvent(message, metadata.samplePosition);
+        }
     }
     buffer.swapWith(filteredBuffer);
 }
+
+void MIDIProcessor::setHold(juce::MidiBuffer &buffer, bool guiHold)
+{
+    for (const auto metadata : buffer)
+    {
+        const auto message = metadata.getMessage();
+        
+        if(message.isController() && message.getControllerNumber() == 64)
+        {
+            midiHold = message.getControllerValue() >= 64;
+        }
+    }
+    hold = midiHold || guiHold;
+}
+
 
 std::array<float, 16> MIDIProcessor::getheldPitches()
 {
@@ -87,22 +135,23 @@ void MIDIProcessor::noteOff(juce::MidiBuffer& midiBuffer, int channel, int sampl
 }
 
 
-void Spinner::setSampleRate(double sampleRate)
+void Spinner::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     this->sampleRate = sampleRate;
+    this->samplesPerBlock = samplesPerBlock;
     forwardLPG.setSampleRate(sampleRate);
     backwardLPG.setSampleRate(sampleRate);
     brakeLPG.setSampleRate(sampleRate);
 
 }
 
-void Spinner::setRate(int rateBPM, float rateFree, bool rateMode, float phaseOffset, float rateScale)
+void Spinner::setRate(int rateBPM, float rateFree, bool rateMode, float phase, float curve)
 {
     this->rateBPM = rateBPM;
     this->rateFree = rateFree;
     this->rateMode = rateMode;
-    this->phaseOffset = phaseOffset;
-    this->rateScale = rateScale;
+    this->phaseOffset = phase;
+    this->curve = curve;
 }
 
 void Spinner::reset()
@@ -126,7 +175,7 @@ void Spinner::resetMode(int resetMode, int numHeldNotes, bool manualReset) // to
     }
 }
 
-void Spinner::tempo(juce::AudioPlayHead* playhead)
+void Spinner::playhead(juce::AudioPlayHead* playhead)
 {
     if (playhead == nullptr){
         return;
@@ -141,6 +190,13 @@ void Spinner::tempo(juce::AudioPlayHead* playhead)
     if (pos.getBpm().hasValue()) {
         bpm = *pos.getBpm();
     }
+    
+    // playhead and reset
+    bool isPlaying = pos.getIsPlaying();
+    if (!isPlaying && prevIsPlaying) {
+        reset();
+    }
+    prevIsPlaying = isPlaying;
 }
 
 void Spinner::nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, float brakeStrength, int brake)
@@ -165,11 +221,14 @@ void Spinner::nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, fl
 }
 
 
+
+
 void Spinner::accumulate()
 {
     float nudgeValue = (forwardLPG.generateEnvelope() + (backwardLPG.generateEnvelope() * -1.0f)) * 10.0f;
     float brakeValue = (1.0f - brakeLPG.generateEnvelope());
     float scaleMultiplier = rateScaleMultiplier[rateScale];
+    
     if (!holdAccum){
         if (rateMode) // sync
         {            
@@ -182,6 +241,7 @@ void Spinner::accumulate()
             
         }
     }
+    
     if (phase > 1.0f) phase -= 1.0f;
     previousPhase = phase;
 }
@@ -189,10 +249,32 @@ void Spinner::accumulate()
 float Spinner::getPhase()
 {
     float offset = phaseOffset / 100.0f;
-    float wrapped = fmodf(phase + offset, 1.0f);
-    if (wrapped < 0.0f)
-        wrapped += 1.0f;
-    return wrapped;
+    float phaseOffset = fmodf(phase + offset, 1.0f);
+    float wrappedPhase = getWrappedPhase(phaseOffset);
+    float curvedPhase = getCurvedPhase(wrappedPhase);
+    
+    return curvedPhase;
+}
+
+float Spinner::getCurvedPhase(float phase)
+{
+    if (curve == 1.0f) return phase;
+    
+    if (curve > 1.0f)
+    {
+        return std::pow(phase, curve);
+    } else {
+        return 1.0f - pow(1.0f - phase, curve);
+    }
+}
+
+float Spinner::getWrappedPhase(float phase)
+{
+    if (phase < 0.0f) // offset nevative phase values
+    {
+        phase += 1.0f;
+    }
+    return phase;
 }
 
 bool Spinner::getDirection()
