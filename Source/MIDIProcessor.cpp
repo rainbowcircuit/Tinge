@@ -145,13 +145,13 @@ void Spinner::prepareToPlay(double sampleRate, int samplesPerBlock)
 
 }
 
-void Spinner::setRate(int rateBPM, float rateFree, bool rateMode, float phase, float curve)
+void Spinner::setRate(int rateSync, float rateFree, bool rateMode, float phase, float curve)
 {
-    this->rateBPM = rateBPM;
+    this->rateSync = rateSync;
     this->rateFree = rateFree;
     this->rateMode = rateMode;
     this->phaseOffset = phase;
-    this->curve = curve;
+    this->curve = curve/100.0f;
 }
 
 void Spinner::reset()
@@ -227,16 +227,15 @@ void Spinner::accumulate()
 {
     float nudgeValue = (forwardLPG.generateEnvelope() + (backwardLPG.generateEnvelope() * -1.0f)) * 10.0f;
     float brakeValue = (1.0f - brakeLPG.generateEnvelope());
-    float scaleMultiplier = rateScaleMultiplier[rateScale];
     
     if (!holdAccum){
-        if (rateMode) // sync
+        if (!rateMode) // sync
         {            
-            float bpmInHz = ((bpm/60.0f) * rateFree * scaleMultiplier) + nudgeValue;
+            float bpmInHz = ((bpm/60.0f) * rateSyncOptions[rateSync]) + nudgeValue;
             phase += (bpmInHz/sampleRate) * brakeValue;
             
         } else {
-            float rateInHz = (rateFree * scaleMultiplier) + nudgeValue;
+            float rateInHz =  rateFree + nudgeValue;
             phase += (rateInHz/sampleRate) * brakeValue;
             
         }

@@ -53,13 +53,20 @@ TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, st
     updater.addAnimator(isoEnterToggle);
     updater.addAnimator(isoExitToggle);
  
+    controlState = audioProcessor.params->apvts.state.getProperty("controlState", 0);
+    viewState = audioProcessor.params->apvts.state.getProperty("viewState", 0);
+    rotationLayout1->setVisible(!controlState);
+    rotationLayout2->setVisible(!controlState);
+    rotationLayout3->setVisible(!controlState);
+    thresholdLayout->setVisible(controlState);
+
     
 }
 
 TingeAudioProcessorEditor::~TingeAudioProcessorEditor()
 {
-    controlWindowToggle.removeListener(this);
     spinnerControlToggle.removeListener(this);
+    controlWindowToggle.removeListener(this);
     thresholdControlToggle.removeListener(this);
 }
 
@@ -86,8 +93,8 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
         height - margin};
     
     float tabHeight = height * 0.05f;
-    float tabRightHeight = tabSelection ? 0.0f : tabHeight;
-    float tabLeftHeight = !tabSelection ? 0.0f : tabHeight;
+    float tabRightHeight = !controlState ? 0.0f : tabHeight;
+    float tabLeftHeight = controlState ? 0.0f : tabHeight;
 
     bgFillPath.startNewSubPath(bgFillBounds.getTopLeft());
     bgFillPath.lineTo(bgFillBounds.getTopRight());
@@ -109,7 +116,7 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
     bgFillPath.closeSubPath();
     bgFillPath = bgFillPath.createPathWithRoundedCorners(margin);
 
-    g.setColour(Colors::backgroundFillAlt);
+    g.setColour(Colors::graphicBlack);
     g.fillPath(bgFillPath);
     g.setColour(Colors::backgroundFillAlt);
     g.strokePath(bgFillPath, juce::PathStrokeType(1.5f));
@@ -117,11 +124,6 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
     float controlWidth = width * 0.4f;
     
     // overlap control
-    overlapLabel.setBounds(x,
-                           y + height * 0.125f,
-                           height * 0.125f,
-                           getFontSize() * 1.25f);
-    
     overlapSlider.setBounds(x,
                             y,
                             height * 0.125f,
@@ -177,6 +179,7 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
 
 void TingeAudioProcessorEditor::resized()
 {
+
     rotationLayout1->setFontSize(12);
     rotationLayout2->setFontSize(12);
     rotationLayout3->setFontSize(12);
@@ -208,5 +211,12 @@ void TingeAudioProcessorEditor::timerCallback()
                         audioProcessor.params->opacity[2]->getSafe());
      
     overlapSlider.repaint();
+    
+    if (auto* processor = dynamic_cast<TingeAudioProcessor*>(&audioProcessor))
+    {
+        processor->saveEditorState(viewState, controlState);
+        
+    }
+
 }
 

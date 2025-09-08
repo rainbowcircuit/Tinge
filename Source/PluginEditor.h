@@ -41,12 +41,12 @@ public:
     
     void mouseDown(const juce::MouseEvent &m) override
     {
-        if (isoView){
+        if (viewState){
             isoEnterToggle.start();
-            isoView = false;
+            viewState = false;
         } else {
             isoExitToggle.start();
-            isoView = true;
+            viewState = true;
         }
     }
     
@@ -54,12 +54,12 @@ public:
     {
         if (b == &controlWindowToggle)
         {
-            if (isoView){
+            if (viewState){
                 isoEnterToggle.start();
-                isoView = false;
+                viewState = false;
             } else {
                 isoExitToggle.start();
-                isoView = true;
+                viewState = true;
             }
         }
         
@@ -70,7 +70,7 @@ public:
             rotationLayout2->setVisible(true);
             rotationLayout3->setVisible(true);
             thresholdLayout->setVisible(false);
-            tabSelection = true;
+            controlState = true;
         }
         
         if(b == &thresholdControlToggle)
@@ -79,7 +79,7 @@ public:
             rotationLayout2->setVisible(false);
             rotationLayout3->setVisible(false);
             thresholdLayout->setVisible(true);
-            tabSelection = false;
+            controlState = false;
         }
 
     }
@@ -96,7 +96,7 @@ private:
     thresholdControlToggle;
     
     
-    bool isoView = false, tabSelection = true;
+    bool viewState = false, controlState = true;
     float animationValue;
     
     

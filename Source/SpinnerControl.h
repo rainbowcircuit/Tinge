@@ -16,7 +16,7 @@
 #include "EditableTextSlider.h"
 #include "GraphicsHelper.h"
 
-enum class SpinnerControlsLAF { RateDisplay, Rate, Sync, Phase, Opacity, Shape };
+enum class SpinnerControlsLAF { RateDisplay, Rate, Sync, Phase, Opacity, Curve };
 
 class SpinnerControlsLookAndFeel : public juce::LookAndFeel_V4, DrawHelper, GraphicsHelper
 {
@@ -40,7 +40,7 @@ public:
     void drawPhase(juce::Graphics& g, float x, float y, float width, float height, float phase,  bool isBackground);
 
     
-    void drawShape(juce::Graphics &g, float x, float y, float width, float height, float pos);
+    void drawCurve(juce::Graphics &g, float x, float y, float width, float height, float pos);
     
     void drawOpacity(juce::Graphics &g, float x, float y, float width, float height, float pos);
     
@@ -79,7 +79,7 @@ private:
     rateDisplayLAF { SpinnerControlsLAF::RateDisplay },
     rateLAF { SpinnerControlsLAF::Rate },
     phaseLAF { SpinnerControlsLAF::Phase },
-    shapeLAF { SpinnerControlsLAF::Shape },
+    curveLAF { SpinnerControlsLAF::Curve },
     opacityLAF { SpinnerControlsLAF::Opacity };
         
     juce::Slider rateFreeDisplaySlider,
@@ -87,7 +87,7 @@ private:
     rateFreeDialSlider,
     rateSyncDialSlider,
     phaseDialSlider,
-    shapeDialSlider,
+    curveDialSlider,
     opacityDialSlider;
     
     std::unique_ptr<EditableTextBoxSlider>
@@ -95,17 +95,17 @@ private:
     rateSyncTextSlider;
     
     juce::Label rateLabel,
-    syncLabel,
+    rateModeLabel,
     phaseLabel,
-    shapeLabel,
+    curveLabel,
     opacityLabel;
     
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
     rateFreeAttachment,
     rateSyncAttachment,
     phaseAttachment,
-    shapeAttachment,
-    opacityAttachment;
+    opacityAttachment,
+    curveAttachment;
 
     juce::ToggleButton rateModeButton;
     

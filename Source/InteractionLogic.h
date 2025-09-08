@@ -31,7 +31,7 @@ public:
         }
     }
     
-    enum thresholdMode { EquiDistant = 0, Fill, Harmonic, Clusters, Sequential, Fibonacci};
+    enum thresholdMode { EquiDistant = 0, Fill, Harmonic, Clusters, Fibonacci};
     
     void processThreshold(thresholdMode mode, float thresholdPhase, int maxThreshold)
     {
@@ -82,23 +82,18 @@ public:
                 }
                 break;
             }
-                
-            case thresholdMode::Sequential:
+            
+            default: // equidistant
             {
-                float pos = 0.0f;
-                float step = 1.0f / numThresholds;
-                
+                float thresholdIncr = 1.0f/numThresholds;
                 for (int i = 0; i < numThresholds; i++){
-
-                    thresholdAngles[i] = pos;
-                    pos += step * (1.0f + 0.2f * i);
-                    
-                    if (pos > 1.0f) pos -= 1.0f;
+                    float angles = thresholdIncr * i;
+                    thresholdAngles[i] = std::fmodf(angles + thresholdPhase, 1.0f);
                 }
                 break;
             }
-
         }
+        
         // find the interaction of thresholds
         for (int index = 0; index < 3; index++)
         {

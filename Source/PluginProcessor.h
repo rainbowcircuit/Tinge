@@ -40,6 +40,7 @@ public:
 
     bool acceptsMidi() const override;
     bool producesMidi() const override;
+
     bool isMidiEffect() const override;
     double getTailLengthSeconds() const override;
 
@@ -53,7 +54,7 @@ public:
     //==============================================================================
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
-    
+    void saveEditorState(bool viewState, bool controlState);
     //==============================================================================
     std::unique_ptr<Parameters> params;
 

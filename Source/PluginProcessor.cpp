@@ -13,10 +13,12 @@
 TingeAudioProcessor::TingeAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
      : AudioProcessor (BusesProperties()
-                      #if ! JucePlugin_IsSynth
-                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
-                      #endif
+#if JucePlugin_Build_VST3
                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+#else
+                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), false)
+                       .withOutput ("Output", juce::AudioChannelSet::stereo(), false)
+#endif
                        )
 #endif
 {
@@ -49,11 +51,16 @@ bool TingeAudioProcessor::producesMidi() const
    #endif
 }
 
+
+// MODIFY THIS METHOD - override the format-specific behavior
 bool TingeAudioProcessor::isMidiEffect() const
 {
-    return JucePlugin_IsMidiEffect;
+#if JucePlugin_Build_VST3
+    return false;  // VST3: not a MIDI effect
+#else
+    return true;   // AU: is a MIDI effect
+#endif
 }
-
 double TingeAudioProcessor::getTailLengthSeconds() const
 {
     return 0.0;
@@ -140,9 +147,9 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
     for (int i = 0; i < 3; i++){
         rotation[i].playhead(getPlayHead());
         
-        rotation[i].setRate(0,
-                            params->rate[i]->get(),
-                            false,
+        rotation[i].setRate(params->rateSync[i]->get(),
+                            params->rateFree[i]->get(),
+                            params->rateMode[i]->get(),
                             params->phase[i]->get(),
                             params->curve[i]->get());
         
@@ -191,10 +198,22 @@ juce::AudioProcessorEditor* TingeAudioProcessor::createEditor()
 //==============================================================================
 void TingeAudioProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
+    copyXmlToBinary(*params->apvts.copyState().createXml(), destData);
 }
 
 void TingeAudioProcessor::setStateInformation (const void* data, int sizeInBytes)
 {
+    const auto xmlState = getXmlFromBinary(data, sizeInBytes);
+       if (xmlState == nullptr)
+           return;
+       const auto newTree = juce::ValueTree::fromXml(*xmlState);
+    params->apvts.replaceState(newTree);
+}
+
+void TingeAudioProcessor::saveEditorState(bool viewState, bool controlState)
+{
+    params->apvts.state.setProperty("viewState", viewState, nullptr);
+    params->apvts.state.setProperty("controlState", controlState, nullptr);
 }
 
 //==============================================================================

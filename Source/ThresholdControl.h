@@ -25,13 +25,13 @@ class ThresholdLookAndFeel : public juce::LookAndFeel_V4, DrawHelper
 {
 public:
     ThresholdLookAndFeel(ThresholdLAF l) : lookAndFeel(l) {}
-    
+
     void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider) override;
     void drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
     
     
     void drawThresholdPhase(juce::Graphics &g, float x, float y, float size, float position);
-    void drawThresholdMax(juce::Graphics &g, float x, float y, float size, float position);
+    void drawThresholdMax(juce::Graphics &g, float x, float y, float width, float height, float position);
     
     
     void drawOverlapBackground(juce::Graphics &g, float x, float y, float size, bool state, int c1, int c2);
@@ -59,7 +59,7 @@ class ThresholdLayout : public juce::Component, public juce::Button::Listener, p
 {
 public:
     ThresholdLayout(TingeAudioProcessor &p);
-    ~ThresholdLayout() {}
+    ~ThresholdLayout();
     void paint(juce::Graphics& g) override
     {
      //   g.setColour(Colors::graphicWhiteAlt);
@@ -77,13 +77,7 @@ private:
     
     ThresholdLookAndFeel
     maxLAF { ThresholdLAF::Max },
-    phaseLAF { ThresholdLAF::Phase },
-    equiDistantLAF { ThresholdLAF::Equidistant },
-    fillLAF { ThresholdLAF::Fill },
-    harmonicLAF { ThresholdLAF::Harmonic },
-    randomLAF { ThresholdLAF::Random },
-    sequentialLAF { ThresholdLAF::Sequential },
-    fibonacciButtonLAF { ThresholdLAF::Fibonacci };
+    phaseLAF { ThresholdLAF::Phase };
 
     
     juce::Slider rateFreeSlider,
@@ -92,13 +86,16 @@ private:
     thresholdStretchDial,
     thresholdSkewDial;
     
-   // std::unique_ptr<EditableTextBoxSlider>
+    std::unique_ptr<EditableTextBoxSlider>
+    thresholdMaxTextSlider;
 
     
     juce::Label
     thresholdModeLabel,
     thresholdPhaseLabel,
     thresholdMaxLabel;
+    
+    
     
     juce::TextButton equiDistantButton,
     fillButton,
@@ -107,9 +104,27 @@ private:
     sequentialButton,
     fibonacciButton;
     
+    std::array<juce::TextButton, 5> thresholdModeButton;
+    
+    std::array<ThresholdLookAndFeel, 5> thresholdModeLAF = {
+        ThresholdLookAndFeel { ThresholdLAF::Equidistant },
+        ThresholdLookAndFeel { ThresholdLAF::Fill },
+        ThresholdLookAndFeel { ThresholdLAF::Harmonic },
+        ThresholdLookAndFeel { ThresholdLAF::Random },
+        ThresholdLookAndFeel { ThresholdLAF::Fibonacci }
+    };
+    
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
     thresholdPhaseAttachment,
     thresholdMaxAttachment;
+    
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>
+    equiDistantAttachment,
+    fillAttachment,
+    harmonicAttachment,
+    randomAttachment,
+    fibonacciAttachment;
 
+    TingeAudioProcessor& audioProcessor;
 };
 

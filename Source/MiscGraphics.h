@@ -90,11 +90,6 @@ public:
         drawDoubleOverlap(g, pathA, pathC, colorAC, false);
         drawTripleOverlap(g, pathA, pathB, pathC, colorABC, false);
         
-     //   g.setColour(Colors::graphicWhite);
-     //   g.strokePath(pathA, juce::PathStrokeType(1.5f));
-      //  g.strokePath(pathB, juce::PathStrokeType(1.5f));
-      //  g.strokePath(pathC, juce::PathStrokeType(1.5f));
-
     }
         
     

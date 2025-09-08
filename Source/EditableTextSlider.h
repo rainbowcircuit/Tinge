@@ -3,7 +3,7 @@
 #include <JuceHeader.h>
 #include "LookAndFeel.h"
 
-enum class UnitStyle { Int, Float, Time, Frequency, Decibel, Percent, Semitone, Custom };
+enum class UnitStyle { Int, Float, Percent, Hertz, Sync };
 
 class EditableTextBoxSlider : public juce::Component, juce::Timer, juce::AudioProcessorParameter::Listener, juce::AsyncUpdater, juce::Label::Listener
 {
@@ -166,6 +166,10 @@ public:
         this->parameterSuffix = parameterSuffix;
     }
 
+    void setJustification(juce::Justification justification)
+    {
+        textBox.setJustificationType(justification);
+    }
     
     void timerCallback() override
     {
@@ -188,23 +192,8 @@ public:
         {
             case UnitStyle::Int:
                 return juce::String((int)std::round(value));
-                
-            case UnitStyle::Float:
-                return juce::String(value, numDecimals);
-                
-            case UnitStyle::Time:
-            {
-                if (value >= 1000.0f)
-                {
-                    return juce::String(value / 1000.0f, numDecimals) + " s";
-                }
-                else
-                {
-                    return juce::String(value, numDecimals) + " ms";
-                }
-            }
-            
-            case UnitStyle::Frequency:
+                        
+            case UnitStyle::Hertz:
             {
                 if (value >= 1000.0f)
                 {
@@ -215,19 +204,17 @@ public:
                     return juce::String(value, numDecimals) + " Hz";
                 }
             }
-            
-            case UnitStyle::Decibel:
-                return juce::String(value, numDecimals) + " dB";
-                
+                            
             case UnitStyle::Percent:
                 return juce::String(value, numDecimals) + " %";
                 
-            case UnitStyle::Semitone:
-                return juce::String(value, numDecimals) + " st";
+            case UnitStyle::Sync:
+            {
+                auto syncRateOptions = audioProcessor.params->getSyncRateOptions();
+                auto formatted = syncRateOptions[std::floor(value)];
+                return juce::String(formatted);
+            }
                 
-            case UnitStyle::Custom:
-                return juce::String(value, numDecimals) + parameterSuffix;
-
             default:
                 return juce::String(value, numDecimals);
         }

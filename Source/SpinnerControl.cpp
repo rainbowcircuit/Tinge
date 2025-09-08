@@ -44,9 +44,9 @@ void SpinnerControlsLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int 
             break;
         }
             
-        case SpinnerControlsLAF::Shape:
+        case SpinnerControlsLAF::Curve:
         {
-            drawShape(g, xPos, yPos, graphicWidth, graphicHeight, sliderPosProportional);
+            drawCurve(g, xPos, yPos, graphicWidth, graphicHeight, sliderPosProportional);
             break;
         }
         case SpinnerControlsLAF::Opacity:
@@ -112,21 +112,35 @@ void SpinnerControlsLookAndFeel::drawRateDisplay(juce::Graphics& g, float x, flo
         offsetRPath = offsetRPath.createPathWithRoundedCorners(10);
 
     }
+    offsetRPath.lineTo(x + width, y + height/2);
+    offsetRPath.lineTo(x + width, y + height);
+    offsetRPath.lineTo(x, y + height);
+    offsetRPath.closeSubPath();
+    offsetRPath = offsetRPath.createPathWithRoundedCorners(height * 0.15f);
+    
+    auto color = Palette::darkenColors(Colors::primaryColor[(spinnerIndex + 1) % 3], Colors::primaryColor[spinnerIndex]);
+    g.setColour(color.withAlpha((float)1.0f));
+    g.fillPath(offsetRPath);
+
+    
     sinMainPath.lineTo(x + width, y + height/2);
     sinMainPath.lineTo(x + width, y + height);
     sinMainPath.lineTo(x, y + height);
     sinMainPath.closeSubPath();
     sinMainPath = sinMainPath.createPathWithRoundedCorners(height * 0.15f);
-    
-    g.setColour(Colors::graphicBlackAlt);
-    g.strokePath(offsetRPath, juce::PathStrokeType(1.5f));
-    
-    g.setColour(Colors::primaryColor[spinnerIndex]);
+
+    auto color2 = Palette::interpolateColors(color, Colors::primaryColor[spinnerIndex], 0.5f);
+    g.setColour(color2.withAlpha((float)1.0f));
     g.fillPath(sinMainPath);
     
-    g.setColour(Colors::graphicBlack);
-    g.strokePath(offsetLPath, juce::PathStrokeType(1.5f));
+    offsetLPath.lineTo(x + width, y + height/2);
+    offsetLPath.lineTo(x + width, y + height);
+    offsetLPath.lineTo(x, y + height);
+    offsetLPath.closeSubPath();
+    offsetLPath = offsetLPath.createPathWithRoundedCorners(height * 0.15f);
 
+    g.setColour(Colors::primaryColor[spinnerIndex]);
+    g.fillPath(offsetLPath);
 
 }
 
@@ -161,7 +175,7 @@ void SpinnerControlsLookAndFeel::drawPhase(juce::Graphics& g, float x, float y, 
     int domainResolution = 128;
     float widthIncrement = width/domainResolution;
     float phaseScale = domainResolution/twopi;
-    phase = (phase * 10.0f - 5.0f) * twopi;
+    phase = (phase * 2.0f - 1.0f) * twopi;
 
     float freq = 2.0f;
     
@@ -176,61 +190,50 @@ void SpinnerControlsLookAndFeel::drawPhase(juce::Graphics& g, float x, float y, 
 
     graphicPath = graphicPath.createPathWithRoundedCorners(4.0f);
     
-    auto color = isBackground ? Colors::graphicBlack : Colors::primaryColor[spinnerIndex];
+    auto color = isBackground ? Colors::graphicGrey : Colors::primaryColor[spinnerIndex];
     g.setColour(color);
     g.strokePath(graphicPath, juce::PathStrokeType(1.5f));
 }
 
-void SpinnerControlsLookAndFeel::drawShape(juce::Graphics &g, float x, float y, float width, float height, float pos)
+void SpinnerControlsLookAndFeel::drawCurve(juce::Graphics &g, float x, float y, float width, float height, float pos)
 {
-    juce::Path fillPath, leftValuePath, rightValuePath;
-    float pi = juce::MathConstants<float>::pi;
-
-    fillPath.addCentredArc(x + width/2, y + height, height, height, 0.0f,
-                              pi * 1.5f,
-                           pi * 2.0f,
-                              true);
+    juce::Path trianglePath, linePath;
     
-    fillPath.lineTo(x + width, y);
-    fillPath.addCentredArc(x + width/2, y, height, height, 0.0f,
-                              pi * 0.5f,
-                           pi,
-                          false);
-    fillPath.closeSubPath();
-    g.setColour(Colors::graphicBlack);
-    g.fillPath(fillPath);
-
-    // foreground value
-    float leftValue = juce::jlimit(0.0f, 0.5f, pos);
-    leftValuePath.addCentredArc(x + width/2, y + height, height, height, 0.0f,
-                              pi * 1.5f,
-                                (pi * 1.5f) + (leftValue * pi * 2.0f),
-                              true);
-    leftValuePath.lineTo(x + width/2, y + height);
-    leftValuePath.closeSubPath();
-  // g.setColour();
-  //  g.fillPath(leftValuePath);
-
+    float triangleSize = width * 0.2;
+    trianglePath.addTriangle(x + width/2,
+                             y + height/2,
+                             (x + width/2) - triangleSize/2,
+                             (y + height/2) + triangleSize,
+                             (x + width/2) + triangleSize/2,
+                             (y + height/2) + triangleSize);
     
+    trianglePath = trianglePath.createPathWithRoundedCorners(width * 0.05f);
+    g.setColour(Colors::graphicGrey);
+    g.fillPath(trianglePath);
     
-    float rightValue = juce::jlimit(0.5f, 1.0f, pos);
-    rightValuePath.addCentredArc(x + width/2, y, height, height, 0.0f,
-                                 pi * 0.5f,
-                                 (pi * 0.5f) + ((rightValue - 0.5f) * pi * 2.0f),
-                              true);
-    rightValuePath.lineTo(x + width/2, y);
-    rightValuePath.closeSubPath();
 
-    auto multipliedColor = Palette::multiplyColors(Colors::primaryColor[spinnerIndex],
-                                            Colors::primaryColor[spinnerIndex]);
-
-    drawDoubleOverlap(g, fillPath, rightValuePath, Colors::primaryColor[spinnerIndex], false);
-
-    drawDoubleOverlap(g, fillPath, leftValuePath, multipliedColor, false);
+    linePath.startNewSubPath(x + width * 0.1f, y + height * 0.3);
+    linePath.lineTo(x + width * 0.9f, y + height * 0.3);
+    float radius = height * 0.2f;
+    linePath.addCentredArc(x + width/2,
+                    y + height * 0.3,
+                    radius,
+                    radius,
+                    0.0f,
+                    1.57f,
+                    4.71f,
+                    true);
 
 
-    drawDoubleOverlap(g, leftValuePath, rightValuePath, Colors::graphicBlack, false);
-    
+    float rotation = (pos - 0.5f) * (juce::MathConstants<float>::pi/4);
+    linePath.applyTransform(juce::AffineTransform::rotation(rotation,
+                                                            x + width/2,
+                                                            y + height * 0.3));
+    g.setColour(Colors::primaryColor[spinnerIndex]);
+    g.fillPath(linePath);
+    g.strokePath(linePath, juce::PathStrokeType(1.5f));
+
+
 }
 
 void SpinnerControlsLookAndFeel::drawOpacity(juce::Graphics &g, float x, float y, float width, float height, float pos)
@@ -262,7 +265,7 @@ void SpinnerControlsLookAndFeel::drawOpacity(juce::Graphics &g, float x, float y
     g.setColour(Colors::primaryColor[spinnerIndex]);
     g.fillPath(leftCircle);
     
-    g.setColour(Colors::graphicBlack);
+    g.setColour(Colors::graphicGrey);
     g.fillPath(rightCircle);
     
     auto multipliedColor = Palette::multiplyColors(Colors::primaryColor[spinnerIndex],
@@ -272,96 +275,51 @@ void SpinnerControlsLookAndFeel::drawOpacity(juce::Graphics &g, float x, float y
 
 }
 
-/*
-void SpinnerControlsLookAndFeel::drawOpacity(juce::Graphics& g, float x, float y, float size, float amount)
-{
-    juce::Path outlinePath, fillPath, fillClipPath;
-    float radius = size * 0.35f;
-    Palette p;
-    float alpha = (amount) * 0.75f + 0.25f;
-    auto colorFill = p.interpolateColors(Colors::backgroundFillAlt, Colors::primaryColor[spinnerIndex], alpha);
-    
-    // fill
-    outlinePath.addCentredArc(x + size/2,
-                              y + size/2,
-                              radius,
-                              radius,
-                              0.0f,
-                              0.0f,
-                              6.28f,
-                              true);
-    
-    juce::Colour fillAdjust = amount < 0.5f ? colorFill : Colors::graphicBlack;
-    g.setColour(fillAdjust);
-    g.fillPath(outlinePath);
-
-    // clipped
-    float radianAdjust = amount >= 0.5f ? 0.0f : 3.14f;
-    juce::Colour clipFillAdjust = amount >= 0.5f ? colorFill : Colors::graphicBlack;
-
-    fillPath.addCentredArc(x + size/2,
-                           y + size/2,
-                           radius,
-                           radius,
-                           0.0f,
-                           0.0f + radianAdjust,
-                           3.14f + radianAdjust,
-                           true);
-    
-    float radiusScaled = radius * std::abs((amount - 0.5f) * 2.0f);
-    fillPath.addCentredArc(x + size/2,
-                           y + size/2,
-                           radiusScaled,
-                           radius,
-                           0.0f,
-                           3.14f + radianAdjust,
-                           6.28f + radianAdjust,
-                           false);
-    g.setColour(clipFillAdjust);
-    g.fillPath(fillPath);
-    
-    g.setColour(Colors::backgroundFill);
-    g.strokePath(outlinePath, juce::PathStrokeType(1.0f));
-}
- */
 
     SpinnerLayout::SpinnerLayout(TingeAudioProcessor &p, int index) : audioProcessor(p)
     {
         this->index = index;
-                
+        
+        bool rateMode = audioProcessor.params->rateMode[index]->get();
+        addAndMakeVisible(rateModeButton);
+        rateModeButton.setToggleable(true);
+        rateModeButton.setClickingTogglesState(true);
+        rateModeButton.addListener(this);
+        
         rateDisplayLAF.setIndex(index);
         setSlider(*this, rateFreeDisplaySlider, rateDisplayLAF);
-        juce::String rateFreeID = "rate" + juce::String(index);
+        rateFreeDisplaySlider.setVisible(rateMode);
+        setSlider(*this, rateSyncDisplaySlider, rateDisplayLAF);
+        rateSyncDisplaySlider.setVisible(!rateMode);
 
+        juce::String rateFreeID = "rateFree" + juce::String(index);
         rateFreeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, rateFreeID, rateFreeDisplaySlider);
         
-
+        juce::String rateSyncID = "rateSync" + juce::String(index);
+        rateSyncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, rateSyncID, rateSyncDisplaySlider);
 
         // rate
         setLabel(*this, rateLabel, "Rate", juce::Justification::left);
-        
-    //    rateLAF.setIndex(index);
-    //    setSlider(*this, rateFreeDialSlider, rateLAF);
-    //    setSlider(*this, rateSyncDialSlider, rateLAF);
+        setLabel(*this, rateModeLabel, "Sync/Free", juce::Justification::left);
+
         // rate text slider
         rateFreeTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, rateFreeID);
         addAndMakeVisible(*rateFreeTextSlider);
         rateFreeTextSlider->setFontSize(12.0f);
-        rateFreeTextSlider->setUnitStyle(UnitStyle::Frequency);
+        rateFreeTextSlider->setUnitStyle(UnitStyle::Hertz);
         rateFreeTextSlider->setNumDecimals(2);
+        rateFreeTextSlider->setJustification(juce::Justification::left);
+        rateFreeTextSlider->setVisible(rateMode);
         
-        rateSyncTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, rateFreeID);
+        rateSyncTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, rateSyncID);
         addAndMakeVisible(*rateSyncTextSlider);
         rateSyncTextSlider->setFontSize(12.0f);
-        rateSyncTextSlider->setUnitStyle(UnitStyle::Custom);
-        rateSyncTextSlider->setNumDecimals(2);
+        rateSyncTextSlider->setUnitStyle(UnitStyle::Sync);
+        rateSyncTextSlider->setJustification(juce::Justification::left);
+        rateSyncTextSlider->setVisible(!rateMode);
+        
+        
 
-        
-        
-        
-        
-        
-        
         // phase
         setLabel(*this, phaseLabel, "Phase", juce::Justification::centred);
         phaseLAF.setIndex(index);
@@ -369,7 +327,6 @@ void SpinnerControlsLookAndFeel::drawOpacity(juce::Graphics& g, float x, float y
         juce::String phaseID = "phase" + juce::String(index);
         phaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, phaseID, phaseDialSlider);
 
-        // shape
         
         // opacity
         setLabel(*this, opacityLabel, "Opacity", juce::Justification::centred);
@@ -378,6 +335,13 @@ void SpinnerControlsLookAndFeel::drawOpacity(juce::Graphics& g, float x, float y
         juce::String opacityID = "opacity" + juce::String(index);
         opacityAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, opacityID, opacityDialSlider);
 
+        // shape
+        setLabel(*this, curveLabel, "Curve", juce::Justification::centred);
+        curveLAF.setIndex(index);
+        setSlider(*this, curveDialSlider, curveLAF);
+        juce::String curveID = "curve" + juce::String(index);
+        curveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, curveID, curveDialSlider);
+
     }
     
     SpinnerLayout::~SpinnerLayout()
@@ -385,39 +349,7 @@ void SpinnerControlsLookAndFeel::drawOpacity(juce::Graphics& g, float x, float y
         rateModeButton.removeListener(this);
     }
     
-void SpinnerLayout::paint(juce::Graphics& g)
-{
-    /*
-    auto bounds = getLocalBounds().toFloat();
-    float margin = bounds.getWidth() * 0.05f;
-    bounds.reduce(margin, margin);
-    float x = bounds.getX();
-    float y = bounds.getY();
-    float width = bounds.getWidth();
-    float height = bounds.getHeight();
-
-    juce::Path backgroundPath, highlightPath;
-
-    backgroundPath.addRoundedRectangle(x,
-                                       y,
-                                       width,
-                                       height * 0.5f,
-                                       margin * 0.5f);
-    
-    g.setColour(Colors::graphicBlack);
-    g.fillPath(backgroundPath);
-    highlightPath.startNewSubPath(x, y);
-    highlightPath.lineTo(x + width * 0.2f, y);
-    highlightPath.lineTo(x + width * 0.075f, y + height * 0.5f);
-    highlightPath.lineTo(x, y + height * 0.5f);
-    highlightPath.closeSubPath();
-    g.setColour(juce::Colour(255, 255, 255).withAlpha((float)0.15f));
-    g.fillPath(highlightPath);
-    g.reduceClipRegion(backgroundPath);
-     */
-
-    
-}
+void SpinnerLayout::paint(juce::Graphics& g) {}
 
 void SpinnerLayout::resized()
 {
@@ -432,13 +364,18 @@ void SpinnerLayout::resized()
     float rowLabelY = y + height * 0.5f;
     float rowHeight = getFontSize() * 1.5f;
 
+    // rate display
     rateFreeDisplaySlider.setBounds(x,
                                     y,
                                     width,
                                     height * 0.5f);
     
-    
-    // rate
+    rateSyncDisplaySlider.setBounds(x,
+                                    y,
+                                    width,
+                                    height * 0.5f);
+
+    // rate text
     rateLabel.setBounds(x,
                         rowLabelY,
                         width * 0.225f,
@@ -449,20 +386,28 @@ void SpinnerLayout::resized()
                                   width * 0.3f,
                                   rowHeight);
     
-    /*
+    
     rateSyncTextSlider->setBounds(x + width * 0.18f,
                                   rowLabelY,
                                   width * 0.3f,
                                   rowHeight);
-     */
+    
+    rateModeLabel.setBounds(x + width * 0.55f,
+                             rowLabelY,
+                             width * 0.3f,
+                             rowHeight);
+
+    rateModeButton.setBounds(x + width * 0.85f,
+                             rowLabelY,
+                             width * 0.15f,
+                             rowHeight);
 
     
-     
-    // opacity
     
     rowLabelY = y + height * 0.65f;
     float rowSliderY = y + height * 0.775f;
 
+    // phase
     phaseLabel.setBounds(x,
                            rowLabelY,
                            width * 0.275f,
@@ -473,10 +418,9 @@ void SpinnerLayout::resized()
                                  width * 0.275f,
                                  height * 0.25f);
     
-    phaseDialSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    phaseDialSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0.0f, 0.0f);
 
-    
-    
+    // opacity
     opacityLabel.setBounds(x + width * 0.3375f,
                            rowLabelY,
                            width * 0.325f,
@@ -489,28 +433,34 @@ void SpinnerLayout::resized()
                                  height * 0.25f);
     opacityDialSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0.0f, 0.0f);
     
+    // curve
+    curveLabel.setBounds(x + width * 0.6625f,
+                           rowLabelY,
+                           width * 0.325f,
+                           rowHeight);
+    curveLabel.setFont(juce::FontOptions(getFontSize()));
+
+    curveDialSlider.setBounds(x + width * 0.6625f,
+                                rowSliderY,
+                                 width * 0.325f,
+                                 height * 0.25f);
+    curveDialSlider.setTextBoxStyle(juce::Slider::NoTextBox, false, 0.0f, 0.0f);
+
 }
 
 void SpinnerLayout::buttonClicked(juce::Button* b)
 {
         
      if (b == &rateModeButton){
-        
         juce::String rateModeID = "rateMode" + juce::String(index);
         bool rateMode = rateModeButton.getToggleState();
         float rateModeFloat = rateMode ? 0.0f : 1.0f;
         audioProcessor.params->apvts.getParameter(rateModeID)->setValueNotifyingHost(rateModeFloat);
-        
-        if (rateMode)
-        {
-            rateFreeDisplaySlider.setVisible(true);
-            rateSyncDisplaySlider.setVisible(false);
-            
-        } else {
-            rateFreeDisplaySlider.setVisible(false);
-            rateSyncDisplaySlider.setVisible(true);
-        }
-        
+         
+        rateFreeDisplaySlider.setVisible(!rateMode);
+        rateFreeTextSlider->setVisible(!rateMode);
+        rateSyncDisplaySlider.setVisible(rateMode);
+        rateSyncTextSlider->setVisible(rateMode);
     }
 }
 

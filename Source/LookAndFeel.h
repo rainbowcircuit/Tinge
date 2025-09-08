@@ -20,8 +20,9 @@ namespace Colors {
     inline juce::Colour graphicWhiteAlt = { 235, 245, 232 };
 
     inline juce::Colour graphicBlack = { 39, 41, 40 };
-    inline juce::Colour graphicBlackAlt = { 64, 66, 65 };
+    inline juce::Colour graphicBlackAlt = { 84, 86, 85 };
 
+    inline juce::Colour graphicGrey = { 209, 204, 161 };
 
     inline juce::Array<juce::Colour> primaryColor = {
         juce::Colour::fromRGB(231, 157, 11),   // yellow
