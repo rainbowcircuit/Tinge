@@ -24,10 +24,13 @@ namespace Colors {
 
     inline juce::Colour graphicGrey = { 209, 204, 161 };
 
+    inline juce::Colour textColor = { 109, 111, 110 };
+
     inline juce::Array<juce::Colour> primaryColor = {
         juce::Colour::fromRGB(231, 157, 11),   // yellow
         juce::Colour::fromRGB(227, 90, 106),  // chartreuse
         juce::Colour::fromRGB(78, 132, 120),  // yellow-green
+        juce::Colour::fromRGB(161, 87, 0),   // wrap-around yellow
     };
     
     
@@ -36,7 +39,6 @@ namespace Colors {
 
 struct Palette
 {
-    
     static juce::Colour interpolateColors(const juce::Colour& c1, const juce::Colour& c2, float t)
     {
         t = juce::jlimit(0.0f, 1.0f, t);
@@ -61,16 +63,25 @@ struct Palette
         return darkenColors(darkenColors(c1, c2), c3);
     }
     
-    static juce::Colour multiplyColors(const juce::Colour& c1, const juce::Colour& c2)
+    static juce::Colour multiplyColors(const juce::Colour& c, float floor)
     {
-        float r = juce::jlimit(0.0f, 1.0f, c1.getFloatRed() * c2.getFloatRed());
-        float g = juce::jlimit(0.0f, 1.0f, c1.getFloatGreen() * c2.getFloatGreen());
-        float b = juce::jlimit(0.0f, 1.0f, c1.getFloatBlue() * c2.getFloatBlue());
+        float r = juce::jlimit(0.0f, 1.0f, c.getFloatRed() * c.getFloatRed());
+        float g = juce::jlimit(0.0f, 1.0f, c.getFloatGreen() * c.getFloatGreen());
+        float b = juce::jlimit(0.0f, 1.0f, c.getFloatBlue() * c.getFloatBlue());
 
         // Return the entire color with higher total brightness
-        return juce::Colour::fromFloatRGBA(r + 0.1f, g + 0.1f, b + 0.1f, 1.0f);
+        return juce::Colour::fromFloatRGBA(r + floor, g + floor, b + floor, 1.0f);
     }
     
+    static juce::Colour addFloor(const juce::Colour& c, float floor)
+    {
+        float r = juce::jlimit(0.0f, 1.0f, c.getFloatRed());
+        float g = juce::jlimit(0.0f, 1.0f, c.getFloatGreen());
+        float b = juce::jlimit(0.0f, 1.0f, c.getFloatBlue());
+
+        // Return the entire color with higher total brightness
+        return juce::Colour::fromFloatRGBA(r + floor, g + floor, b + floor, 1.0f);
+    }
 
      
     void setColors(float alphaA, float alphaB, float alphaC)

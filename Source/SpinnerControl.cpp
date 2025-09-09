@@ -17,33 +17,31 @@ void SpinnerControlsLookAndFeel::setIndex(int index)
 
 void SpinnerControlsLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider)
 {
+    bool hover = slider.isMouseOver();
+    primaryColor = !hover ? Colors::primaryColor[spinnerIndex] : Palette::addFloor(Colors::primaryColor[spinnerIndex], 0.05f);
+    graphicGrey = !hover ? Colors::graphicGrey : Palette::addFloor(Colors::graphicGrey, 0.05f);
+
     auto bounds = slider.getLocalBounds().toFloat();
     bounds.reduce(5, 5);
     float xPos = bounds.getX();
     float yPos = bounds.getY();
-    float size = bounds.getWidth();
     float graphicWidth = bounds.getWidth();
     float graphicHeight = bounds.getHeight();
     
     switch(lookAndFeel){
-        case SpinnerControlsLAF::RateDisplay:
+        case SpinnerControlsLAF::Rate:
         {
-            drawRateDisplay(g, xPos, yPos, graphicWidth, graphicHeight, sliderPosProportional);
+            drawRate(g, xPos, yPos, graphicWidth, graphicHeight, sliderPosProportional);
             break;
         }
 
-        case SpinnerControlsLAF::Rate:
-        {
-            drawRate(g, xPos, yPos + graphicHeight * 0.25f, graphicWidth, graphicHeight * 0.5f, sliderPosProportional);
-            break;
-        }
         case SpinnerControlsLAF::Phase:
         {
             drawPhase(g, xPos, yPos, graphicWidth, graphicHeight, 0.0f, false);
             drawPhase(g, xPos, yPos, graphicWidth, graphicHeight, sliderPosProportional, true);
             break;
         }
-            
+
         case SpinnerControlsLAF::Curve:
         {
             drawCurve(g, xPos, yPos, graphicWidth, graphicHeight, sliderPosProportional);
@@ -57,7 +55,29 @@ void SpinnerControlsLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int 
     }
 }
 
-void SpinnerControlsLookAndFeel::drawRateDisplay(juce::Graphics& g, float x, float y, float width, float height, float pos)
+void SpinnerControlsLookAndFeel::drawToggleButton(juce::Graphics& g, juce::ToggleButton& button, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
+{
+    auto bounds = button.getLocalBounds();
+    bool hover = button.isMouseOver();
+    primaryColor = !hover ? Colors::primaryColor[spinnerIndex] : Palette::addFloor(Colors::primaryColor[spinnerIndex], 0.05f);
+    
+    juce::Path graphicPath;
+    graphicPath.addCentredArc(bounds.getCentreX(),
+                              bounds.getCentreY(),
+                              bounds.getHeight() * 0.25f,
+                              bounds.getHeight() * 0.25f,
+                              0.0f,
+                              0.0f,
+                              6.28f,
+                              true);
+    
+    g.setColour(primaryColor);
+    if (button.getToggleState()) { g.fillPath(graphicPath); }
+    else { g.strokePath(graphicPath, juce::PathStrokeType(1.5f)); }
+
+}
+
+void SpinnerControlsLookAndFeel::drawRate(juce::Graphics& g, float x, float y, float width, float height, float pos)
 {
     int domainResolution = 128;
     float xIncr = width/domainResolution;
@@ -118,7 +138,7 @@ void SpinnerControlsLookAndFeel::drawRateDisplay(juce::Graphics& g, float x, flo
     offsetRPath.closeSubPath();
     offsetRPath = offsetRPath.createPathWithRoundedCorners(height * 0.15f);
     
-    auto color = Palette::darkenColors(Colors::primaryColor[(spinnerIndex + 1) % 3], Colors::primaryColor[spinnerIndex]);
+    auto color = Palette::darkenColors(Colors::primaryColor[(spinnerIndex + 1)], primaryColor);
     g.setColour(color.withAlpha((float)1.0f));
     g.fillPath(offsetRPath);
 
@@ -129,7 +149,7 @@ void SpinnerControlsLookAndFeel::drawRateDisplay(juce::Graphics& g, float x, flo
     sinMainPath.closeSubPath();
     sinMainPath = sinMainPath.createPathWithRoundedCorners(height * 0.15f);
 
-    auto color2 = Palette::interpolateColors(color, Colors::primaryColor[spinnerIndex], 0.5f);
+    auto color2 = Palette::interpolateColors(color, primaryColor, 0.5f);
     g.setColour(color2.withAlpha((float)1.0f));
     g.fillPath(sinMainPath);
     
@@ -139,31 +159,8 @@ void SpinnerControlsLookAndFeel::drawRateDisplay(juce::Graphics& g, float x, flo
     offsetLPath.closeSubPath();
     offsetLPath = offsetLPath.createPathWithRoundedCorners(height * 0.15f);
 
-    g.setColour(Colors::primaryColor[spinnerIndex]);
+    g.setColour(primaryColor);
     g.fillPath(offsetLPath);
-
-}
-
-void SpinnerControlsLookAndFeel::drawRate(juce::Graphics& g, float x, float y, float width, float height, float pos)
-{
-    juce::Path frontEndPath, frontPath, backPath;
-    juce::Point<float> centerCoords = { x + width/2, y + height/2 };
-    
-    float pi = juce::MathConstants<float>::pi;
-    float radius = height * 0.75f;
-    float startPoint = -1.57f;
-    float dialPoint = startPoint + (pos * pi);
-
-    juce::Path outlinePath, valuePath;
-    
-    valuePath.addCentredArc(x + width/2,
-                            y + height,
-                            radius,
-                            radius,
-                            0.0f, 0.0f, dialPoint, true);
-    g.setColour(Colors::primaryColor[spinnerIndex]);
-    g.strokePath(valuePath, juce::PathStrokeType(2.0f));
-
 }
 
 void SpinnerControlsLookAndFeel::drawPhase(juce::Graphics& g, float x, float y, float width, float height, float phase, bool isBackground)
@@ -190,9 +187,11 @@ void SpinnerControlsLookAndFeel::drawPhase(juce::Graphics& g, float x, float y, 
 
     graphicPath = graphicPath.createPathWithRoundedCorners(4.0f);
     
-    auto color = isBackground ? Colors::graphicGrey : Colors::primaryColor[spinnerIndex];
+    auto color = isBackground ? graphicGrey : primaryColor;
     g.setColour(color);
-    g.strokePath(graphicPath, juce::PathStrokeType(1.5f));
+    auto strokeType = juce::PathStrokeType(1.5f, juce::PathStrokeType::JointStyle::curved);
+    strokeType.setEndStyle(juce::PathStrokeType::EndCapStyle::rounded);
+    g.strokePath(graphicPath, strokeType);
 }
 
 void SpinnerControlsLookAndFeel::drawCurve(juce::Graphics &g, float x, float y, float width, float height, float pos)
@@ -208,7 +207,7 @@ void SpinnerControlsLookAndFeel::drawCurve(juce::Graphics &g, float x, float y, 
                              (y + height/2) + triangleSize);
     
     trianglePath = trianglePath.createPathWithRoundedCorners(width * 0.05f);
-    g.setColour(Colors::graphicGrey);
+    g.setColour(graphicGrey);
     g.fillPath(trianglePath);
     
 
@@ -229,9 +228,11 @@ void SpinnerControlsLookAndFeel::drawCurve(juce::Graphics &g, float x, float y, 
     linePath.applyTransform(juce::AffineTransform::rotation(rotation,
                                                             x + width/2,
                                                             y + height * 0.3));
-    g.setColour(Colors::primaryColor[spinnerIndex]);
+    g.setColour(primaryColor);
     g.fillPath(linePath);
-    g.strokePath(linePath, juce::PathStrokeType(1.5f));
+    auto strokeType = juce::PathStrokeType(1.5f, juce::PathStrokeType::JointStyle::curved);
+    strokeType.setEndStyle(juce::PathStrokeType::EndCapStyle::rounded);
+    g.strokePath(linePath, strokeType);
 
 
 }
@@ -262,92 +263,100 @@ void SpinnerControlsLookAndFeel::drawOpacity(juce::Graphics &g, float x, float y
                               6.28f,
                               true);
     
-    g.setColour(Colors::primaryColor[spinnerIndex]);
+    g.setColour(primaryColor);
     g.fillPath(leftCircle);
     
-    g.setColour(Colors::graphicGrey);
+    g.setColour(graphicGrey);
     g.fillPath(rightCircle);
     
-    auto multipliedColor = Palette::multiplyColors(Colors::primaryColor[spinnerIndex],
-                                            Colors::primaryColor[spinnerIndex]);
+    auto multipliedColor = Palette::multiplyColors(primaryColor, 0.1f);
 
     drawDoubleOverlap(g, leftCircle, rightCircle, multipliedColor, false);
-
 }
 
 
-    SpinnerLayout::SpinnerLayout(TingeAudioProcessor &p, int index) : audioProcessor(p)
-    {
-        this->index = index;
-        
-        bool rateMode = audioProcessor.params->rateMode[index]->get();
-        addAndMakeVisible(rateModeButton);
-        rateModeButton.setToggleable(true);
-        rateModeButton.setClickingTogglesState(true);
-        rateModeButton.addListener(this);
-        
-        rateDisplayLAF.setIndex(index);
-        setSlider(*this, rateFreeDisplaySlider, rateDisplayLAF);
-        rateFreeDisplaySlider.setVisible(rateMode);
-        setSlider(*this, rateSyncDisplaySlider, rateDisplayLAF);
-        rateSyncDisplaySlider.setVisible(!rateMode);
-
-        juce::String rateFreeID = "rateFree" + juce::String(index);
-        rateFreeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, rateFreeID, rateFreeDisplaySlider);
-        
-        juce::String rateSyncID = "rateSync" + juce::String(index);
-        rateSyncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, rateSyncID, rateSyncDisplaySlider);
-
-        // rate
-        setLabel(*this, rateLabel, "Rate", juce::Justification::left);
-        setLabel(*this, rateModeLabel, "Sync/Free", juce::Justification::left);
-
-        // rate text slider
-        rateFreeTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, rateFreeID);
-        addAndMakeVisible(*rateFreeTextSlider);
-        rateFreeTextSlider->setFontSize(12.0f);
-        rateFreeTextSlider->setUnitStyle(UnitStyle::Hertz);
-        rateFreeTextSlider->setNumDecimals(2);
-        rateFreeTextSlider->setJustification(juce::Justification::left);
-        rateFreeTextSlider->setVisible(rateMode);
-        
-        rateSyncTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, rateSyncID);
-        addAndMakeVisible(*rateSyncTextSlider);
-        rateSyncTextSlider->setFontSize(12.0f);
-        rateSyncTextSlider->setUnitStyle(UnitStyle::Sync);
-        rateSyncTextSlider->setJustification(juce::Justification::left);
-        rateSyncTextSlider->setVisible(!rateMode);
-        
-        
-
-        // phase
-        setLabel(*this, phaseLabel, "Phase", juce::Justification::centred);
-        phaseLAF.setIndex(index);
-        setSlider(*this, phaseDialSlider, phaseLAF);
-        juce::String phaseID = "phase" + juce::String(index);
-        phaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, phaseID, phaseDialSlider);
-
-        
-        // opacity
-        setLabel(*this, opacityLabel, "Opacity", juce::Justification::centred);
-        opacityLAF.setIndex(index);
-        setSlider(*this, opacityDialSlider, opacityLAF);
-        juce::String opacityID = "opacity" + juce::String(index);
-        opacityAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, opacityID, opacityDialSlider);
-
-        // shape
-        setLabel(*this, curveLabel, "Curve", juce::Justification::centred);
-        curveLAF.setIndex(index);
-        setSlider(*this, curveDialSlider, curveLAF);
-        juce::String curveID = "curve" + juce::String(index);
-        curveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, curveID, curveDialSlider);
-
-    }
+SpinnerLayout::SpinnerLayout(TingeAudioProcessor &p, int index) : audioProcessor(p)
+{
+    this->index = index;
     
-    SpinnerLayout::~SpinnerLayout()
-    {
-        rateModeButton.removeListener(this);
-    }
+    bool rateMode = audioProcessor.params->rateMode[index]->get();
+    addAndMakeVisible(rateModeButton);
+    rateModeLAF.setIndex(index);
+    rateModeButton.setLookAndFeel(&rateModeLAF);
+    rateModeButton.setToggleable(true);
+    rateModeButton.setClickingTogglesState(true);
+    rateModeButton.addListener(this);
+    
+    rateLAF.setIndex(index);
+    setSlider(*this, rateFreeDisplaySlider, rateLAF);
+    rateFreeDisplaySlider.setVisible(rateMode);
+    setSlider(*this, rateSyncDisplaySlider, rateLAF);
+    rateSyncDisplaySlider.setVisible(!rateMode);
+
+    juce::String rateFreeID = "rateFree" + juce::String(index);
+    rateFreeAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, rateFreeID, rateFreeDisplaySlider);
+    
+    juce::String rateSyncID = "rateSync" + juce::String(index);
+    rateSyncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, rateSyncID, rateSyncDisplaySlider);
+
+    // rate
+    setLabel(*this, rateLabel, "Rate", juce::Justification::left);
+    rateLabel.setColour(juce::Label::textColourId, Colors::textColor);
+    setLabel(*this, rateModeLabel, "Sync/Free", juce::Justification::left);
+    rateModeLabel.setColour(juce::Label::textColourId, Colors::textColor);
+
+    // rate text slider
+    rateFreeTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, rateFreeID);
+    addAndMakeVisible(*rateFreeTextSlider);
+    rateFreeTextSlider->setFontSize(12.0f);
+    rateFreeTextSlider->setUnitStyle(UnitStyle::Hertz);
+    rateFreeTextSlider->setNumDecimals(2);
+    rateFreeTextSlider->setJustification(juce::Justification::left);
+    rateFreeTextSlider->setVisible(rateMode);
+    
+    rateSyncTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, rateSyncID);
+    addAndMakeVisible(*rateSyncTextSlider);
+    rateSyncTextSlider->setFontSize(12.0f);
+    rateSyncTextSlider->setUnitStyle(UnitStyle::Sync);
+    rateSyncTextSlider->setJustification(juce::Justification::left);
+    rateSyncTextSlider->setVisible(!rateMode);
+    
+    
+
+    // phase
+    setLabel(*this, phaseLabel, "Phase", juce::Justification::centred);
+    phaseLabel.setColour(juce::Label::textColourId, Colors::textColor);
+
+    phaseLAF.setIndex(index);
+    setSlider(*this, phaseDialSlider, phaseLAF);
+    juce::String phaseID = "phase" + juce::String(index);
+    phaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, phaseID, phaseDialSlider);
+
+    
+    // opacity
+    setLabel(*this, opacityLabel, "Opacity", juce::Justification::centred);
+    opacityLabel.setColour(juce::Label::textColourId, Colors::textColor);
+
+    opacityLAF.setIndex(index);
+    setSlider(*this, opacityDialSlider, opacityLAF);
+    juce::String opacityID = "opacity" + juce::String(index);
+    opacityAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, opacityID, opacityDialSlider);
+
+    // shape
+    setLabel(*this, curveLabel, "Curve", juce::Justification::centred);
+    curveLabel.setColour(juce::Label::textColourId, Colors::textColor);
+
+    curveLAF.setIndex(index);
+    setSlider(*this, curveDialSlider, curveLAF);
+    juce::String curveID = "curve" + juce::String(index);
+    curveAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, curveID, curveDialSlider);
+
+}
+
+SpinnerLayout::~SpinnerLayout()
+{
+    rateModeButton.removeListener(this);
+}
     
 void SpinnerLayout::paint(juce::Graphics& g) {}
 
@@ -399,7 +408,7 @@ void SpinnerLayout::resized()
 
     rateModeButton.setBounds(x + width * 0.85f,
                              rowLabelY,
-                             width * 0.15f,
+                             rowHeight,
                              rowHeight);
 
     

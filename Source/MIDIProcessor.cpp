@@ -235,24 +235,23 @@ void Spinner::accumulate()
             phase += (bpmInHz/sampleRate) * brakeValue;
             
         } else {
-            float rateInHz =  rateFree + nudgeValue;
+            float rateInHz = rateFree + nudgeValue;
             phase += (rateInHz/sampleRate) * brakeValue;
             
         }
     }
     
-    if (phase > 1.0f) phase -= 1.0f;
+    if (phase >= 1.0f) phase = 0.0f;
     previousPhase = phase;
 }
 
 float Spinner::getPhase()
 {
-    float offset = phaseOffset / 100.0f;
-    float phaseOffset = fmodf(phase + offset, 1.0f);
-    float wrappedPhase = getWrappedPhase(phaseOffset);
-    float curvedPhase = getCurvedPhase(wrappedPhase);
+    float offset = fmodf(phase + phaseOffset/100.0f, 1.0f);
+    float phaseOutput = getWrappedPhase(offset);
+    phaseOutput = getCurvedPhase(phaseOutput);
     
-    return curvedPhase;
+    return phaseOutput;
 }
 
 float Spinner::getCurvedPhase(float phase)

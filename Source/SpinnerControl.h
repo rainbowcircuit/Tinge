@@ -16,7 +16,7 @@
 #include "EditableTextSlider.h"
 #include "GraphicsHelper.h"
 
-enum class SpinnerControlsLAF { RateDisplay, Rate, Sync, Phase, Opacity, Curve };
+enum class SpinnerControlsLAF { Rate, rateMode, Phase, Opacity, Curve };
 
 class SpinnerControlsLookAndFeel : public juce::LookAndFeel_V4, DrawHelper, GraphicsHelper
 {
@@ -29,19 +29,12 @@ public:
     void setIndex(int index);
     void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider) override;
     
-//    void drawRoundSlider(juce::Graphics &g, float x, float y, float size, float position);
-    void drawRateDisplay(juce::Graphics& g, float x, float y, float width, float height, float pos);
+    void drawToggleButton(juce::Graphics& g, juce::ToggleButton& button, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
+
     void drawRate(juce::Graphics& g, float x, float y, float width, float height, float pos);
-
- //   void drawRatio(juce::Graphics& g, float x, float y, float size, float index);
-    
-    void drawSync(juce::Graphics &g, float x, float y, float width, float height, float pos);
-
+    void drawRateMode(juce::Graphics &g, float x, float y, float size, bool state);
     void drawPhase(juce::Graphics& g, float x, float y, float width, float height, float phase,  bool isBackground);
-
-    
     void drawCurve(juce::Graphics &g, float x, float y, float width, float height, float pos);
-    
     void drawOpacity(juce::Graphics &g, float x, float y, float width, float height, float pos);
     
     void drawTextEditorOutline(juce::Graphics& g, int width, int height, juce::TextEditor& texteditor) override {}
@@ -53,8 +46,9 @@ private:
     float lineWidth = 1.5f;
     int spinnerIndex;
     SpinnerControlsLAF lookAndFeel;
-    juce::Colour iconShade = juce::Colour(190, 190, 190);
-    juce::Colour iconDisabled = juce::Colour(90, 90, 90);
+    
+    juce::Colour primaryColor, graphicGrey;
+    
 };
 
 class SpinnerLayout : public juce::Component, public juce::Button::Listener, public juce::Timer, public GraphicsHelper
@@ -76,8 +70,8 @@ private:
     int index;
     int hover;
     SpinnerControlsLookAndFeel
-    rateDisplayLAF { SpinnerControlsLAF::RateDisplay },
     rateLAF { SpinnerControlsLAF::Rate },
+    rateModeLAF { SpinnerControlsLAF::rateMode },
     phaseLAF { SpinnerControlsLAF::Phase },
     curveLAF { SpinnerControlsLAF::Curve },
     opacityLAF { SpinnerControlsLAF::Opacity };

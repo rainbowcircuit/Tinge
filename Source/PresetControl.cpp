@@ -13,7 +13,6 @@
 void PresetControlsLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
 {
     auto bounds = button.getLocalBounds().toFloat();
-  //  bounds.reduce(margin, margin);
     
     float x = bounds.getX();
     float y = bounds.getY();

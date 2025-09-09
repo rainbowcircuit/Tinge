@@ -16,7 +16,8 @@ public:
         textBox.setEditable(false, false, false);
         textBox.setInterceptsMouseClicks(false, false);
         textBox.setColour(juce::Label::outlineWhenEditingColourId, juce::Colours::transparentBlack);
-        textBox.setColour(juce::Label::textColourId, Colors::graphicBlack);
+        textBox.setColour(juce::Label::textColourId, Colors::graphicWhite);
+        textBox.setColour(juce::Label::textWhenEditingColourId, Colors::graphicWhite);
 
         // initialize displayed value
         textBox.addListener(this);

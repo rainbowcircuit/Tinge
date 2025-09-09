@@ -43,7 +43,6 @@ apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
         phase[i] = std::make_unique<ParameterInstance>(audioProcessor, *this, "phase" + incr);
         opacity[i] = std::make_unique<ParameterInstance>(audioProcessor, *this, "opacity" + incr);
         curve[i] = std::make_unique<ParameterInstance>(audioProcessor, *this, "curve" + incr);
-
     }
 }
 
@@ -95,10 +94,10 @@ Parameters::createParameterLayout()
 
     layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "thresholdPhase", 1},
                                                            "Threshold Phase",
-                                                           juce::NormalisableRange<float> { 0.0f, 100.0f, 0.1 }, 100.0f));
+                                                           juce::NormalisableRange<float> { 0.0f, 100.0f, 0.1 }, 50.0f));
 
     layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "maxThreshold", 1},
-                                                           "Max Threshold", 1, 16, 6));
+                                                           "Max Threshold", 1, 16, 8));
 
     
     std::array<float, 3> phaseDefaults = { 0.0f, 33.0f, 66.0f };
@@ -110,7 +109,7 @@ Parameters::createParameterLayout()
         
         layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { rateFreeID, 1},
                                                                rateFreeName,
-                                                               juce::NormalisableRange<float> { -5.0f, 5.0f, 0.01 }, 0.0f));
+                                                               juce::NormalisableRange<float> { -8.0f, 8.0f, 0.01 }, 0.0f));
         
         juce::String rateSyncID = "rateSync" + juce::String(rotation);
         juce::String rateSyncName = "Rate Sync " + juce::String(rotation + 1);

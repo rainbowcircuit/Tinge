@@ -36,9 +36,10 @@ public:
         
         float segmentTimeT60 = processT60(segmentSelect);
         envelope = (1.0f - segmentTimeT60) * gate + segmentTimeT60 * unitDelay;
+        if (std::abs(envelope) < 1e-15f) // denormal clearing
+            envelope = 0.0f;
         
         unitDelay = envelope;
-                
         return envelope;
     }
     
@@ -50,7 +51,6 @@ public:
 private:
     float processT60(float input)
     {
-        
         float t60 = std::exp(safediv(-6.9077552789821f, input));
         return t60;
     }

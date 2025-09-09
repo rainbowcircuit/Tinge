@@ -25,17 +25,17 @@ void GlobalControlsLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Bu
     {
         case GlobalControlsLAF::NudgeForward:
         {
-            drawNudge(g, x, y, width, true);
+            drawLines(g, x, y, width, 0.0f);
             break;
         }
         case GlobalControlsLAF::NudgeBackward:
         {
-            drawNudge(g, x, y, width, false);
+            drawLines(g, x, y, width, 3.14f);
             break;
         }
         case GlobalControlsLAF::Brake:
         {
-            drawBrake(g, x, y, width, height);
+            drawLines(g, x, y, width, 4.71f);
             break;
         }
         case GlobalControlsLAF::Reset:
@@ -57,66 +57,24 @@ void GlobalControlsLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int y
 }
 
 
-void GlobalControlsLookAndFeel::drawNudge(juce::Graphics &g, float x, float y, float size, bool drawNudgeBack)
+void GlobalControlsLookAndFeel::drawLines(juce::Graphics &g, float x, float y, float size, float rotation)
 {
+    juce::Path graphicPath;
     for (int i = 0; i < 5; i++)
     {
         float sizeIncr = (size/5) * (i * (1.0f - lpgValue));
         juce::Point<float> topPoint = { x + sizeIncr, y };
         juce::Point<float> botPoint = { x + sizeIncr, y + size };
         
-        juce::Path graphicPath;
         graphicPath.startNewSubPath(topPoint);
         graphicPath.lineTo(botPoint);
         
-        if (drawNudgeBack)
-        {
-            float centerX = x + size * 0.5f;
-            juce::AffineTransform mirrorTransform =
-                juce::AffineTransform::translation(-centerX, 0.0f)
-                .scaled(-1.0f, 1.0f)
-                .translated(centerX, 0.0f);
-            graphicPath.applyTransform(mirrorTransform);
-        }
-        
-        g.setColour(Colors::graphicBlackAlt);
-        g.strokePath(graphicPath, juce::PathStrokeType(2));
     }
-}
-
-void GlobalControlsLookAndFeel::drawBrake(juce::Graphics &g, float x, float y, float width, float height)
-{
-    float radius = height * 0.5f;
-    float offset = (0.5f - lpgValue * 0.5f) * radius;
-
-    juce::Path leftCircle, rightCircle;
-    juce::Point centerCoords = { x + width/2, y + height/2 };
-    
-    leftCircle.addCentredArc(centerCoords.x - offset,
-                             centerCoords.y,
-                             radius,
-                             radius,
-                             0.0f,
-                             0.0f,
-                             6.28f,
-                             true);
-    
-    rightCircle.addCentredArc(centerCoords.x + offset,
-                              centerCoords.y,
-                              radius,
-                              radius,
-                              0.0f,
-                              0.0f,
-                              6.28f,
-                              true);
-    
+    graphicPath.applyTransform(juce::AffineTransform::rotation(rotation, x + size/2, y + size/2));
     g.setColour(Colors::graphicBlackAlt);
-    g.fillPath(leftCircle);
-    g.fillPath(rightCircle);
-
-    drawDoubleOverlap(g, leftCircle, rightCircle, Colors::backgroundFill, true);
-    g.strokePath(leftCircle, juce::PathStrokeType(2));
-    g.strokePath(rightCircle, juce::PathStrokeType(2));
+    auto strokeType = juce::PathStrokeType(2.0f, juce::PathStrokeType::JointStyle::curved);
+    strokeType.setEndStyle(juce::PathStrokeType::EndCapStyle::rounded);
+    g.strokePath(graphicPath, strokeType);
 
 }
 
@@ -140,8 +98,10 @@ void GlobalControlsLookAndFeel::drawReset(juce::Graphics &g, float x, float y, f
                  { graphicBounds.getX() + triangleSize,
                 graphicBounds.getCentreY() },
                  4.71f);
-
-    g.strokePath(middlePath, juce::PathStrokeType(2));
+    
+    auto strokeType = juce::PathStrokeType(2.0f, juce::PathStrokeType::JointStyle::curved);
+    strokeType.setEndStyle(juce::PathStrokeType::EndCapStyle::rounded);
+    g.strokePath(middlePath, strokeType);
 
 }
 
@@ -313,12 +273,12 @@ void GlobalControlsLayout::resized()
     // brake
     brakeLabel.setBounds((x + buttonSize/2) + buttonSize * 2.0f,
                          height * 0.775f,
-                         buttonSize * 2,
+                         buttonSize,
                          getFontSize());
     
     brakeButton.setBounds((x + buttonSize/2) + buttonSize * 2.0f,
                           y + height * 0.05f,
-                          buttonSize * 2,
+                          buttonSize,
                           buttonSize);
 
     // jog

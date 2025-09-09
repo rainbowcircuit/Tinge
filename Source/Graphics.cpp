@@ -139,8 +139,6 @@ void SpinnerGraphics::setWheelPosition()
 
 juce::Path SpinnerGraphics::generateWheelPath(juce::Graphics& g, int index)
 {
-    float isometric = isometricSkew;
-    
     float x = rotationValue[index].bounds.getX();
     float y = rotationValue[index].bounds.getY();
     float width = rotationValue[index].bounds.getWidth();
@@ -157,10 +155,10 @@ juce::Path SpinnerGraphics::generateWheelPath(juce::Graphics& g, int index)
     if (endAngle <= startAngle)
         endAngle += twopi;
         
-        wheelPath.startNewSubPath(x + width/2, y + height/(isometric));
-        wheelPath.addCentredArc(x + width/2, y + height/(isometric),
+        wheelPath.startNewSubPath(x + width/2, y + height/isometricSkew);
+        wheelPath.addCentredArc(x + width/2, y + height/isometricSkew,
                                 radius,
-                                radius/(isometric),
+                                radius/isometricSkew,
                                 0.0f,
                                 startAngle,
                                 endAngle);
@@ -172,7 +170,6 @@ juce::Path SpinnerGraphics::generateWheelPath(juce::Graphics& g, int index)
 
 juce::Path SpinnerGraphics::generateSegmentedWheelPath(juce::Graphics& g, int startIndex, int endIndex)
 {
-    float isometric = isometricSkew;
     float twopi = juce::MathConstants<float>::twoPi;
     float x = rotationValue[startIndex].sumBounds.getX();
     float y = rotationValue[startIndex].sumBounds.getY();
@@ -193,9 +190,9 @@ juce::Path SpinnerGraphics::generateSegmentedWheelPath(juce::Graphics& g, int st
     startAngle *= twopi;
     endAngle *= twopi;
 
-        wheelPath.startNewSubPath(x + width/2, y + height/(isometric)); // center
-        wheelPath.addCentredArc(x + width/2, y + height/(isometric),
-                                radius, radius/(isometric),
+        wheelPath.startNewSubPath(x + width/2, y + height/isometricSkew); // center
+        wheelPath.addCentredArc(x + width/2, y + height/isometricSkew,
+                                radius, radius/isometricSkew,
                                 0.0f, startAngle, endAngle);
         wheelPath.closeSubPath();
         wheelPath = wheelPath.createPathWithRoundedCorners(1);
@@ -218,7 +215,6 @@ void SpinnerGraphics::drawThreshold(juce::Graphics& g)
     
     float innerRadius = width * 0.525f;
     float outerRadius = width * 0.575f;
-    float isometric = isometricSkew;
     
     for (int i = 0; i < numThresholds; i++)
     {
@@ -229,7 +225,10 @@ void SpinnerGraphics::drawThreshold(juce::Graphics& g)
         
         
         thresholdSlew.triggerEnvelope(thresholdWeight);
+        float isometric = (1.0f - animationValue);
+
         float thresholdHeight = thresholdSlew.generateEnvelope() * height * 0.25f;
+        thresholdHeight *= isometric;
         
         if (numThresholds > 0 && numThresholds <= 16)
         {
@@ -238,10 +237,10 @@ void SpinnerGraphics::drawThreshold(juce::Graphics& g)
             float sin = std::sin(angleOffset * twopi);
 
             juce::Point thresholdStart = { (x + width/2) + cos * innerRadius,
-                (y + height/isometric) + sin * innerRadius/isometric };
+                (y + height/isometricSkew) + sin * innerRadius/isometricSkew };
             
             juce::Point thresholdEnd = { (x + width/2) + cos * outerRadius,
-                (y + height/isometric) + sin * outerRadius/isometric };
+                (y + height/isometricSkew) + sin * outerRadius/isometricSkew };
 
             juce::Path graphicPath;
             graphicPath.startNewSubPath(thresholdStart.x, thresholdStart.y);
@@ -257,7 +256,8 @@ void SpinnerGraphics::drawThreshold(juce::Graphics& g)
 
             g.setColour(thresholdColor);
             g.fillPath(graphicPath);
-            g.strokePath(graphicPath, juce::PathStrokeType(2.0f));
+            auto strokeType = juce::PathStrokeType(2.0f, juce::PathStrokeType::JointStyle::curved);
+            g.strokePath(graphicPath, strokeType);
         }
     }
 }

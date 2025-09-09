@@ -16,7 +16,7 @@
 #include "GraphicsHelper.h"
 #include "InteractionLogic.h"
 #include "LookAndFeel.h"
-
+#include "ThresholdGraphics.h"
 
 class TingeAudioProcessor;
 
@@ -30,11 +30,9 @@ public:
     void drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
     
     
-    void drawThresholdPhase(juce::Graphics &g, float x, float y, float size, float position);
+    void drawThresholdPhase(juce::Graphics &g, float x, float y, float size, float phase, bool isBackGround);
     void drawThresholdMax(juce::Graphics &g, float x, float y, float width, float height, float position);
     
-    
-    void drawOverlapBackground(juce::Graphics &g, float x, float y, float size, bool state, int c1, int c2);
     
     void drawEquidistant(juce::Graphics &g, float x, float y, float size, bool state);
     void drawFill(juce::Graphics &g, float x, float y, float size, bool state);
@@ -46,13 +44,9 @@ public:
     
     float lineWidth;
     ThresholdLAF lookAndFeel;
-};
-
-class ThresholdGraphics : public juce::Component, Interaction
-{
-    void paint(juce::Graphics& g) override {}
-    void resized() override {}
-
+    
+    juce::Colour graphicGrey;
+    
 };
 
 class ThresholdLayout : public juce::Component, public juce::Button::Listener, public juce::Timer, public GraphicsHelper
@@ -67,24 +61,23 @@ public:
     }
     
     void resized() override;
-    void buttonClicked(juce::Button* b) override {}
+    void buttonClicked(juce::Button* b) override;
     void buttonStateChanged(juce::Button* b) override {}
 
+    ThresholdGraphics graphics;
 private:
     void timerCallback() override {}
     
-  //  SpinnerControlsLookAndFeel dialLAF { SpinnerControlsLAF::RoundDial };
     
     ThresholdLookAndFeel
     maxLAF { ThresholdLAF::Max },
     phaseLAF { ThresholdLAF::Phase };
 
     
-    juce::Slider rateFreeSlider,
+    juce::Slider
     thresholdPhaseDial,
     thresholdMaxDial,
-    thresholdStretchDial,
-    thresholdSkewDial;
+    valueSlewDial;
     
     std::unique_ptr<EditableTextBoxSlider>
     thresholdMaxTextSlider;
@@ -116,15 +109,9 @@ private:
     
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
     thresholdPhaseAttachment,
-    thresholdMaxAttachment;
+    thresholdMaxAttachment,
+    valueSlewAttachment;
     
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment>
-    equiDistantAttachment,
-    fillAttachment,
-    harmonicAttachment,
-    randomAttachment,
-    fibonacciAttachment;
-
     TingeAudioProcessor& audioProcessor;
 };
 

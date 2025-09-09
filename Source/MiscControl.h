@@ -25,8 +25,7 @@ public:
     void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider) override;
 
     //==============================================================================
-    void drawNudge(juce::Graphics &g, float x, float y, float size, bool drawNudgeBack);
-    void drawBrake(juce::Graphics &g, float x, float y, float width, float height);
+    void drawLines(juce::Graphics &g, float x, float y, float size, float rotation);
     void drawReset(juce::Graphics &g, float x, float y, float size);
     void drawTriangle(juce::Graphics& g, float size, juce::Point<float> endCoords, float rotation);
     void drawJog(juce::Graphics &g, float x, float y, float size, float position);

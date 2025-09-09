@@ -71,7 +71,6 @@ public:
                                 
             case thresholdMode::Clusters:
             {
-                
                 juce::Random rand;
                 int randomSeed = rand.nextInt();
                 for (int i = 0; i < numThresholds; i++){

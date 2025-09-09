@@ -14,6 +14,9 @@ void ThresholdLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int y, int
 {
     this->lineWidth = width * 0.02f;
     
+    bool hover = slider.isMouseOver();
+    graphicGrey = !hover ? Colors::graphicGrey : Palette::addFloor(Colors::graphicGrey, 0.05f);
+
     switch(lookAndFeel){
         case ThresholdLAF::Max:
         {
@@ -22,7 +25,8 @@ void ThresholdLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int y, int
         }
         case ThresholdLAF::Phase:
         {
-            drawThresholdPhase(g, x, y, width, sliderPosProportional);
+            drawThresholdPhase(g, x, y, width, 0.0f, true);
+            drawThresholdPhase(g, x, y, width, sliderPosProportional, false);
             break;
         }
             
@@ -37,6 +41,11 @@ void ThresholdLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button&
     float width = bounds.getWidth();
     bool state = button.getToggleState();
     
+    float alpha = state ? 1.0f : 0.25f;
+    g.setColour(Colors::graphicGrey.withAlpha((float)alpha));
+    g.fillRoundedRectangle(x, y, width, width, width * 0.15f);
+
+    
     auto iconBounds = bounds;
     iconBounds.reduce(width * 0.2f, width * 0.2f);
     float iconX = iconBounds.getX();
@@ -44,40 +53,31 @@ void ThresholdLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button&
     float iconWidth = iconBounds.getWidth();
 
     
+    
+
     switch(lookAndFeel){
         case ThresholdLAF::Equidistant:
         {
-            drawOverlapBackground(g, x, y, width, state, 0, 2);
             drawEquidistant(g, iconX, iconY, iconWidth, state);
             break;
         }
         case ThresholdLAF::Fill:
         {
-            drawOverlapBackground(g, x, y, width, state, 1, 2);
             drawFill(g, iconX, iconY, iconWidth, state);
             break;
         }
         case ThresholdLAF::Harmonic:
         {
-            drawOverlapBackground(g, x, y, width, state, 0, 1);
             drawHarmonic(g, iconX, iconY, iconWidth, state);
             break;
         }
         case ThresholdLAF::Random:
         {
-            drawOverlapBackground(g, x, y, width, state, 0, 2);
             drawRandom(g, iconX, iconY, iconWidth, state);
             break;
         }
-        case ThresholdLAF::Sequential:
-        {
-           // drawSequenial(g, x, y, width, sliderPosProportional);
-            break;
-        }
-
         case ThresholdLAF::Fibonacci:
         {
-            drawOverlapBackground(g, x, y, width, state, 0, 2);
             drawFibonacci(g, iconX, iconY, iconWidth, state);
             break;
         }
@@ -89,50 +89,70 @@ void ThresholdLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button&
 
 
 
-void ThresholdLookAndFeel::drawThresholdPhase(juce::Graphics &g, float x, float y, float size, float position)
+void ThresholdLookAndFeel::drawThresholdPhase(juce::Graphics &g, float x, float y, float size, float phase, bool isBackground)
 {
+    juce::Path graphicPath;
+    graphicPath.startNewSubPath(x, y + size/2);
     
+    float twopi = juce::MathConstants<float>::twoPi;
+    int domainResolution = 128;
+    float widthIncrement = size/domainResolution;
+    float phaseScale = domainResolution/twopi;
+    phase = phase * twopi;
+
+    float freq = 2.0f;
+    
+    float sinStart = std::sin((0/phaseScale) * freq + phase);
+    graphicPath.startNewSubPath(x + widthIncrement * 0, (y + size/2) + (size * sinStart/2));
+
+    for (int i = 1; i < domainResolution; i++)
+    {
+        float sin = std::sin((i/phaseScale) * freq + phase);
+        graphicPath.lineTo(x + widthIncrement * i, (y + size/2) + (size * sin/2));
+    }
+
+    graphicPath = graphicPath.createPathWithRoundedCorners(4.0f);
+    
+    auto alpha = isBackground ? 0.25f : 1.0f;
+    g.setColour(graphicGrey.withAlpha((float)alpha));
+    auto strokeType = juce::PathStrokeType(1.5f, juce::PathStrokeType::JointStyle::curved);
+    strokeType.setEndStyle(juce::PathStrokeType::EndCapStyle::rounded);
+    g.strokePath(graphicPath, strokeType);
+
 }
 
 void ThresholdLookAndFeel::drawThresholdMax(juce::Graphics &g, float x, float y, float width, float height, float position)
 {
-    juce::Path topPath, bottomPath;
-    float graphicWidth = width/16;
-    float graphicHeight = height * 0.5f;
-    float graphicMargin = width * 0.025f;
+    juce::Path frontPath, backPath;
+    float graphicWidth = width * 0.5;
+    float graphicHeight = height/16;
+    float graphicMargin = height * 0.025f;
+    
     int positionIndex = std::floor(position * 15.0f);
     for (int i = 0; i < 16; i++)
     {
-        bool indexBool = i <= positionIndex;
-        int j = i + 1;
-        float selectionOffset = indexBool ?  height * 0.045f : 0.0f;
-        float heightOffset = std::sin(position * (i + 1)) * height * 0.15f;
-        heightOffset = indexBool ? heightOffset : 0.0f;
+        bool indexBool = i >= positionIndex;
         
-        topPath.addRoundedRectangle(x + graphicMargin + (graphicWidth * i),
-                                        (y + height * 0.25f) + heightOffset + selectionOffset,
-                                        graphicWidth - graphicMargin,
-                                        graphicHeight,
-                                        (graphicWidth - graphicMargin) * 0.5f);
+        backPath.addRoundedRectangle(x + graphicMargin,
+                                    y + graphicHeight * i,
+                                    graphicWidth,
+                                    graphicHeight - graphicMargin,
+                                    graphicHeight/2);
         
-        bottomPath.addRoundedRectangle(x + graphicMargin + (graphicWidth * i),
-                                        (y + height * 0.25f) + heightOffset - selectionOffset,
-                                        graphicWidth - graphicMargin,
-                                        graphicHeight,
-                                        (graphicWidth - graphicMargin) * 0.5f);
-
-        if (indexBool){
-            g.setColour(Colors::primaryColor[0]);
-            g.fillPath(topPath);
-            
-            g.setColour(Colors::primaryColor[1]);
-            g.fillPath(bottomPath);
-        }
+        float xOffset = indexBool ? 0.0f : (graphicWidth/16) * (positionIndex - i);
+        frontPath.addRoundedRectangle(x + graphicMargin + xOffset,
+                                      y + graphicHeight * i,
+                                      graphicWidth,
+                                      graphicHeight - graphicMargin,
+                                      graphicHeight/2);
         
-        auto darkenedColor = Palette::darkenColors(Colors::primaryColor[0], Colors::primaryColor[1]);
-        drawDoubleOverlap(g, topPath, bottomPath, darkenedColor, false);
     }
-    
+    g.setColour(graphicGrey.withAlpha((float)0.25f));
+    g.fillPath(backPath);
+
+    g.setColour(graphicGrey);
+    g.fillPath(frontPath);
+
 }
 
 void ThresholdLookAndFeel::drawEquidistant(juce::Graphics &g, float x, float y, float size, bool state)
@@ -161,32 +181,6 @@ void ThresholdLookAndFeel::drawEquidistant(juce::Graphics &g, float x, float y, 
     
 }
 
-void ThresholdLookAndFeel::drawOverlapBackground(juce::Graphics &g, float x, float y, float size, bool state, int c1, int c2)
-{
-    juce::Rectangle<float> bgLeft = { x,
-        y,
-        size * 0.9f,
-        size * 0.9f };
-    juce::Rectangle<float> bgRight = { x + size * 0.1f,
-        y + size * 0.1f,
-        size * 0.9f,
-        size * 0.9f };
-    juce::Path bgLeftPath, bgRightPath;
-    bgLeftPath.addRoundedRectangle(bgLeft, size * 0.075f);
-    bgRightPath.addRoundedRectangle(bgRight, size * 0.075f);
-
-    auto color1 = state ? Colors::primaryColor[c1] : Colors::graphicBlack;
-    auto color2 = state ? Colors::primaryColor[c2] : Colors::graphicBlack;
-
-    drawWithoutOverlap(g, bgLeftPath, color1, false);
-    drawWithoutOverlap(g, bgRightPath, color2, false);
-    
-    auto darkenedColor = Palette::darkenColors(Colors::primaryColor[c1], Colors::primaryColor[c2]);
-    auto color3 = state ? darkenedColor : Colors::graphicBlackAlt;
-
-    drawDoubleOverlap(g, bgLeftPath, bgRightPath, color3, false);
-}
-
 void ThresholdLookAndFeel::drawFill(juce::Graphics &g, float x, float y, float size, bool state)
 {
     
@@ -213,7 +207,9 @@ void ThresholdLookAndFeel::drawFill(juce::Graphics &g, float x, float y, float s
         
         float alpha = 1.0f/(i + 1.0f);
         g.setColour(Colors::graphicWhite.withAlpha((float)alpha));
-        g.strokePath(graphicPath, juce::PathStrokeType(1.5));
+        auto strokeType = juce::PathStrokeType(1.5f, juce::PathStrokeType::JointStyle::curved);
+        strokeType.setEndStyle(juce::PathStrokeType::EndCapStyle::rounded);
+        g.strokePath(graphicPath, strokeType);
 
     }
 }
@@ -247,11 +243,11 @@ void ThresholdLookAndFeel::drawHarmonic(juce::Graphics &g, float x, float y, flo
 
         float alpha = 1.0f - (1.0f/i);
         g.setColour(Colors::graphicWhite.withAlpha((float)alpha));
-        g.strokePath(topPath, juce::PathStrokeType(1.5f));
-        g.strokePath(bottomPath, juce::PathStrokeType(1.5f));
-
+        auto strokeType = juce::PathStrokeType(1.5f, juce::PathStrokeType::JointStyle::curved);
+        strokeType.setEndStyle(juce::PathStrokeType::EndCapStyle::rounded);
+        g.strokePath(topPath, strokeType);
+        g.strokePath(bottomPath, strokeType);
     }
-    
 }
 
 void ThresholdLookAndFeel::drawRandom(juce::Graphics &g, float x, float y, float size, bool state)
@@ -270,16 +266,12 @@ void ThresholdLookAndFeel::drawRandom(juce::Graphics &g, float x, float y, float
             g.setColour(Colors::graphicWhite);
         }
         g.fillEllipse(xIncr, yIncr, radius, radius);
-        
     }
-
-
-    
 }
 
 void ThresholdLookAndFeel::drawSequential(juce::Graphics &g, float x, float y, float size, bool state)
 {
-    drawOverlapBackground(g, x, y, size, state, 0, 1);
+
     
 }
 
@@ -358,23 +350,32 @@ void ThresholdLookAndFeel::drawFibonacciCube(juce::Graphics &g, float x, float y
 ThresholdLayout::ThresholdLayout(TingeAudioProcessor &p) : audioProcessor(p)
 {
     setSlider(*this, thresholdPhaseDial, phaseLAF);
+    thresholdPhaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, "thresholdPhase", thresholdPhaseDial);
+
     
-    
+    // max threshold
     setLabel(*this, thresholdMaxLabel, "Threshold Max", juce::Justification::left);
-    
     thresholdMaxTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, "maxThreshold");
+    addAndMakeVisible(*thresholdMaxTextSlider);
     thresholdMaxTextSlider->setUnitStyle(UnitStyle::Int);
     thresholdMaxTextSlider->setJustification(juce::Justification::left);
     thresholdMaxTextSlider->setFontSize(12.0f);
 
     setSlider(*this, thresholdMaxDial, maxLAF);
+    thresholdMaxAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, "maxThreshold", thresholdMaxDial);
+    
 
+    // graphics
+    addAndMakeVisible(graphics);
+    
+    
     for (int i = 0; i < 5; i++)
     {
         setButton(*this, thresholdModeButton[i], thresholdModeLAF[i]);
         thresholdModeButton[i].setToggleable(true);
         thresholdModeButton[i].setClickingTogglesState(true);
         thresholdModeButton[i].setRadioGroupId(1);
+        thresholdModeButton[i].addListener(this);
     }
  
 
@@ -384,8 +385,9 @@ ThresholdLayout::~ThresholdLayout()
     for (int i = 0; i < 5; i++)
     {
         thresholdModeButton[i].setLookAndFeel(nullptr);
-    }
+        thresholdModeButton[i].removeListener(this);
 
+    }
 }
 
 
@@ -399,51 +401,58 @@ void ThresholdLayout::resized()
     float width = bounds.getWidth();
     float height = bounds.getHeight();
     
-    thresholdPhaseDial.setBounds(x + width * 0.1f,
-                                 y + height * 0.25f,
-                                 width * 0.35f,
-                                 width * 0.35f);
+    float iconSize = width * 0.275f;
+    thresholdPhaseDial.setBounds(x + iconSize/2,
+                                 y + height * 0.1f,
+                                 iconSize,
+                                 iconSize);
+        
+    // max threshold
     
-    thresholdMaxLabel.setBounds(x + width * 0.1f,
-                                 y,
-                                 width * 0.8f,
-                                 height * 0.1f);
-
-    thresholdMaxTextSlider->setBounds(x + width * 0.5f,
+    thresholdMaxLabel.setBounds(x + width - iconSize,
                                  y,
                                  width * 0.5f,
-                                 height * 0.1f);
+                                 height * 0.05f);
 
-    thresholdMaxDial.setBounds(x + width * 0.1f,
-                                 y + height * 0.1f,
-                                 width * 0.8f,
-                                 height * 0.1f);
+    thresholdMaxTextSlider->setBounds(x + iconSize * 2,
+                                      y,
+                                      iconSize,
+                                      iconSize);
+
+    thresholdMaxDial.setBounds(x + iconSize * 2,
+                               y + height * 0.1f,
+                               iconSize,
+                               iconSize);
      
-    /*
-    thresholdModeButton[0].setBounds(x,
-                                 y + height * 0.1f,
-                                 width * 0.45f,
-                                 width * 0.45f);
+    // graphics
+    graphics.setBounds(x,
+                       y + height * 0.25f,
+                       width,
+                       width);
+
     
-    thresholdModeButton[1].setBounds(x + width * 0.5f,
-                                 y + height * 0.1f,
-                                 width * 0.45f,
-                                 width * 0.45f);
-     
+    float buttonSize = width * 0.2f;
+    
+    for (int i = 0; i < 5; i++)
+    {
+        thresholdModeButton[i].setBounds(x + buttonSize * i,
+                                         y + height * 0.7f,
+                                         buttonSize,
+                                         buttonSize);
+    }
+    
+}
 
-    thresholdModeButton[2].setBounds(x,
-                                 y + height * 0.3f,
-                                 width * 0.45f,
-                                 width * 0.45f);
+void ThresholdLayout::buttonClicked(juce::Button* b)
+{
+    auto param = audioProcessor.params->apvts.getParameter("thresholdMode");
 
-    thresholdModeButton[3].setBounds(x + width * 0.5f,
-                                 y + height * 0.3f,
-                                 width * 0.45f,
-                                 width * 0.45f);
-
-    thresholdModeButton[4].setBounds(x,
-                                 y + height * 0.5f,
-                                 width * 0.45f,
-                                 width * 0.45f);
-    */
+    for (int i = 0; i < 5; i++)
+    {
+        if (b == &thresholdModeButton[i])
+        {
+            float valueNormalized = param->getNormalisableRange().convertTo0to1(i);
+            param->setValueNotifyingHost(valueNormalized);
+        }
+    }
 }

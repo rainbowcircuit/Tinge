@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <JUCERPROJECT id="HhOoZn" name="Tinge" projectType="audioplug" useAppConfig="0"
-              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginCharacteristicsValue="pluginIsSynth,pluginProducesMidiOut,pluginWantsMidiIn"
+              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1" pluginCharacteristicsValue="pluginProducesMidiOut,pluginWantsMidiIn"
               companyName="Rainbow Circuit" companyWebsite="www.rainbowcircuit.co"
               companyEmail="hey@rainbowcircuit.co" userNotes="New ways around MIDI with Daedelus."
-              pluginFormats="buildAU,buildStandalone,buildVST3">
+              pluginFormats="buildAU,buildStandalone,buildVST3" pluginVST3Category="Generator,Instrument"
+              pluginAUMainType="'aumi'">
   <MAINGROUP id="PYvzWc" name="Tinge">
-    <FILE id="hiKpEW" name="ThresholdControl.cpp" compile="1" resource="0"
-          file="Source/ThresholdControl.cpp"/>
-    <FILE id="n3WjtZ" name="ThresholdControl.h" compile="0" resource="0"
-          file="Source/ThresholdControl.h"/>
     <GROUP id="{18F70CB9-6E6C-CF82-B862-86AA61F7A441}" name="Utility">
       <FILE id="YCTSFO" name="Parameters.cpp" compile="1" resource="0" file="Source/Parameters.cpp"/>
       <FILE id="G00t5C" name="Parameters.h" compile="0" resource="0" file="Source/Parameters.h"/>
@@ -17,7 +14,6 @@
       <FILE id="yHCAzq" name="Presets.h" compile="0" resource="0" file="Source/Presets.h"/>
     </GROUP>
     <GROUP id="{950D91BE-D0F5-3886-C586-153CA9CAB1B4}" name="Logic">
-      <FILE id="rRrxRr" name="DSP.cpp" compile="1" resource="0" file="Source/DSP.cpp"/>
       <FILE id="DbC4gD" name="DSP.h" compile="0" resource="0" file="Source/DSP.h"/>
       <FILE id="fXazFv" name="InteractionLogic.cpp" compile="1" resource="0"
             file="Source/InteractionLogic.cpp"/>
@@ -47,6 +43,12 @@
               file="Source/SpinnerControl.cpp"/>
         <FILE id="pVsIRq" name="SpinnerControl.h" compile="0" resource="0"
               file="Source/SpinnerControl.h"/>
+        <FILE id="e0yes8" name="ThresholdGraphics.h" compile="0" resource="0"
+              file="Source/ThresholdGraphics.h"/>
+        <FILE id="hiKpEW" name="ThresholdControl.cpp" compile="1" resource="0"
+              file="Source/ThresholdControl.cpp"/>
+        <FILE id="n3WjtZ" name="ThresholdControl.h" compile="0" resource="0"
+              file="Source/ThresholdControl.h"/>
         <FILE id="LQpkcx" name="UserInterfaceLookAndFeel.cpp" compile="1" resource="0"
               file="Source/UserInterfaceLookAndFeel.cpp"/>
         <FILE id="URT4hF" name="UserInterfaceLookAndFeel.h" compile="0" resource="0"

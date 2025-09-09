@@ -12,14 +12,7 @@
 //==============================================================================
 TingeAudioProcessor::TingeAudioProcessor()
 #ifndef JucePlugin_PreferredChannelConfigurations
-     : AudioProcessor (BusesProperties()
-#if JucePlugin_Build_VST3
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
-#else
-                       .withInput  ("Input",  juce::AudioChannelSet::stereo(), false)
-                       .withOutput ("Output", juce::AudioChannelSet::stereo(), false)
-#endif
-                       )
+     : AudioProcessor (getDefaultLayout())
 #endif
 {
     params = std::make_unique<Parameters>(*this);
@@ -107,24 +100,43 @@ void TingeAudioProcessor::releaseResources()
 #ifndef JucePlugin_PreferredChannelConfigurations
 bool TingeAudioProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
 {
-  #if JucePlugin_IsMidiEffect
-    juce::ignoreUnused (layouts);
-    return true;
-  #else
+    if (wrapperType == juce::AudioProcessor::wrapperType_Standalone)
+    {
+        return true;
+    }
+    
+    if (wrapperType == juce::AudioProcessor::wrapperType_AudioUnit)
+    {
+        if (layouts.getMainInputChannelSet() == juce::AudioChannelSet::disabled() && layouts.getMainOutputChannelSet() == juce::AudioChannelSet::disabled())
+        {
+            // valid AU
+        } else {
+            return layouts.getMainInputChannelSet() == juce::AudioChannelSet::disabled() && layouts.getMainOutputChannelSet() == juce::AudioChannelSet::disabled();
+        }
+    }
 
-    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
-     && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+    if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono() && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
+    {
         return false;
-
-   #if ! JucePlugin_IsSynth
+    }
+        
     if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
+    {
         return false;
-   #endif
-
+    }
+    
     return true;
-  #endif
+
 }
 #endif
+
+juce::AudioProcessor::BusesProperties TingeAudioProcessor::getDefaultLayout()
+{
+    if (juce::PluginHostType::getPluginLoadedAs() == juce::AudioProcessor::wrapperType_AudioUnit)
+        return BusesProperties();
+    else
+        return BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), false).withOutput("Output", juce::AudioChannelSet::stereo(), false);
+}
 
 void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
@@ -163,7 +175,7 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
                               midiProcessor.getNumHeldNotes(),
                               params->reset->get());
         
-
+        
         for(int sample = 0; sample < buffer.getNumSamples(); ++sample){
             rotation[i].accumulate();
         }

@@ -53,7 +53,7 @@ public:
     void notePlayback(juce::MidiBuffer& midiBuffer)
     {
         if (numThresholds <= 0)
-            flushNote(midiBuffer);
+            flushNote(midiBuffer); // figure out how to trigger this one
         
         for (int i = 0; i < numThresholds; i++)
         {
@@ -182,7 +182,8 @@ private:
     LowPassGate forwardLPG, backwardLPG, brakeLPG;
     double sampleRate;
     int samplesPerBlock;
-    float phase = 0.0f, previousPhase = 0.0f, phaseOffset = 0.0f, rateScale = 1.0f, curve = 1.0f;
+    double phase = 0.0f, previousPhase = 0.0f;
+    float phaseOffset = 0.0f, rateScale = 1.0f, curve = 1.0f;
     float bpm = 120.0f;
     
     int rateSync = 0;
@@ -196,14 +197,14 @@ private:
         -8.0,       -6.0,        -4.0,      -3.0,
         -2.0,       -1.5,        -1.333,    -1.0,
         -0.8,       -0.75,       -0.666,    -0.5,
-        -0.333,     -0.25,       -0.125,    -0.833,
+        -0.333,     -0.25,       -0.125,    -0.0833,
         -0.0625,    -0.04167,    -0.03125,
 
          // No motion (middle)
          0.0,
          
          // positive rates
-         0.03125,   0.04167,   0.0625,   0.833,
+         0.03125,   0.04167,   0.0625,   0.0833,
          0.125,     0.25,      0.333,    0.5,
          0.666,     0.75,      0.8,      1.0,
          1.333,     1.5,       2.0,      3.0,

@@ -204,6 +204,10 @@ void TingeAudioProcessorEditor::timerCallback()
                                      audioProcessor.params->thresholdPhase->getSafe(),
                                      audioProcessor.params->maxThreshold->getSafe());
         
+    thresholdLayout->graphics.setParams(audioProcessor.params->thresholdMode->getSafe(),
+                                        audioProcessor.params->thresholdPhase->getSafe(),
+                                        audioProcessor.params->maxThreshold->getSafe());
+    
     spinnerGraphics.setOverlapIndex(audioProcessor.params->overlap->getSafe());
     
     overlapLAF.setColor(audioProcessor.params->opacity[0]->getSafe(),
