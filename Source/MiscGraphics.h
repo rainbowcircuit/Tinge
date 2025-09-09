@@ -12,24 +12,14 @@
 #include <JuceHeader.h>
 #include "LookAndFeel.h"
 
-enum class MiscLAF { Overlap };
+enum class MiscLAF { Overlap, SpinnerTab, ThresholdTab };
 class MiscLookAndFeel : public juce::LookAndFeel_V4, DrawHelper
 {
 public:
-    MiscLookAndFeel(MiscLAF l) : lookAndFeel(l)
-    {
-
-    }
-    
-    void setColor(float opacityA, float opacityB, float opacityC)
-    {
-        p.setColors(opacityA, opacityB, opacityC);
-    }
+    MiscLookAndFeel(MiscLAF l) : lookAndFeel(l) {}
     
     void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider) override
     {
-        auto bounds = slider.getLocalBounds().toFloat();
-        
         switch(lookAndFeel){
             case MiscLAF::Overlap:
             {
@@ -38,8 +28,35 @@ public:
                 drawOverlapSlider(g, x, y, width, position);
                 break;
             }
+            case MiscLAF::SpinnerTab: { break; }
+            case MiscLAF::ThresholdTab: { break; }
         }
     }
+    
+    void drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
+    {
+        auto bounds = button.getLocalBounds().toFloat();
+        float x = bounds.getX();
+        float y = bounds.getY();
+        float width = bounds.getWidth();
+        float iconSize = bounds.getHeight();
+
+        
+        switch(lookAndFeel){
+            case MiscLAF::Overlap: { break; }
+            case MiscLAF::SpinnerTab:
+            {
+                drawSpinnerTab(g, (x + width/2) - (iconSize/2), y, iconSize);
+                break;
+            }
+            case MiscLAF::ThresholdTab:
+            {
+                drawThresholdTab(g, (x + width/2) - (iconSize/2), y, iconSize);
+                break;
+            }
+        }
+    }
+     
     
     void drawOverlapSlider(juce::Graphics &g, float x, float y, float size, int overlapIndex)
     {
@@ -91,7 +108,50 @@ public:
         drawTripleOverlap(g, pathA, pathB, pathC, colorABC, false);
         
     }
+    
+    void drawSpinnerTab(juce::Graphics& g, float x, float y, float size)
+    {
+        float radius = size * 0.3f;
+        float thirdRadian = juce::MathConstants<float>::twoPi/3;
         
+        for(int i = 0; i < 3; i++)
+        {
+            juce::Path graphicPath;
+            graphicPath.addCentredArc(x + size/2,
+                                     y + size/2,
+                                     radius,
+                                     radius,
+                                     thirdRadian * i,
+                                     0.0f,
+                                     thirdRadian,
+                                     true);
+            graphicPath.lineTo(x + size/2, y + size/2);
+            graphicPath.closeSubPath();
+            
+            g.setColour(Colors::primaryColor[i]);
+            g.fillPath(graphicPath);
+        }
+    }
+
+    void drawThresholdTab(juce::Graphics& g, float x, float y, float size)
+    {
+        float radius = size * 0.3f;
+        float dotSize = size * 0.075f;
+        for(int i = 0; i < 8; i++)
+        {
+            float radian = (juce::MathConstants<float>::twoPi/8) * i;
+            juce::Point<float> dotCoords = { (x + size/2) + std::cos(radian) * radius,
+                (y + size/2) + std::sin(radian) * radius };
+            
+            g.setColour(Colors::graphicWhite);
+            g.fillEllipse(dotCoords.x - dotSize/2,
+                          dotCoords.y - dotSize/2,
+                          dotSize,
+                          dotSize);
+        }
+    }
+    
+    
     
 private:
     MiscLAF lookAndFeel;

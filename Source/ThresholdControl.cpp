@@ -17,19 +17,31 @@ void ThresholdLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int y, int
     bool hover = slider.isMouseOver();
     graphicGrey = !hover ? Colors::graphicGrey : Palette::addFloor(Colors::graphicGrey, 0.05f);
 
+    juce::Rectangle<float> bounds = { (float)x, (float)y, (float)width, (float)height };
+    bounds.reduce(width * 0.05f, width * 0.05f);
+    
     switch(lookAndFeel){
         case ThresholdLAF::Max:
         {
-            drawThresholdMax(g, x, y, width, height, sliderPosProportional);
+            drawThresholdMax(g, bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight(), sliderPosProportional);
             break;
         }
         case ThresholdLAF::Phase:
         {
-            drawThresholdPhase(g, x, y, width, 0.0f, true);
-            drawThresholdPhase(g, x, y, width, sliderPosProportional, false);
+            drawThresholdPhase(g, bounds.getX(), bounds.getY(), bounds.getWidth(), 0.0f, true);
+            drawThresholdPhase(g, bounds.getX(), bounds.getY(), bounds.getWidth(), sliderPosProportional, false);
             break;
         }
-            
+        case ThresholdLAF::ValueSlew:
+        {
+            drawValueSlew(g, bounds.getX(), bounds.getY(), bounds.getWidth(), bounds.getHeight(), sliderPosProportional);
+            break;
+        }
+        case ThresholdLAF::Equidistant: { break; }
+        case ThresholdLAF::Fill: { break; }
+        case ThresholdLAF::Harmonic: { break; }
+        case ThresholdLAF::Random: { break; }
+        case ThresholdLAF::Fibonacci: { break; }
     }
 }
 
@@ -39,10 +51,16 @@ void ThresholdLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button&
     float x = bounds.getX();
     float y = bounds.getY();
     float width = bounds.getWidth();
-    bool state = button.getToggleState();
     
+    
+    
+    bool hover = button.isMouseOver();
+    graphicGrey = !hover ? Colors::graphicGrey : Palette::addFloor(Colors::graphicGrey, 0.05f);
+
+    bool state = button.getToggleState();
     float alpha = state ? 1.0f : 0.25f;
-    g.setColour(Colors::graphicGrey.withAlpha((float)alpha));
+    
+    g.setColour(graphicGrey.withAlpha((float)alpha));
     g.fillRoundedRectangle(x, y, width, width, width * 0.15f);
 
     
@@ -56,6 +74,9 @@ void ThresholdLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button&
     
 
     switch(lookAndFeel){
+        case ThresholdLAF::Max: { break; }
+        case ThresholdLAF::Phase: { break; }
+        case ThresholdLAF::ValueSlew: { break; }
         case ThresholdLAF::Equidistant:
         {
             drawEquidistant(g, iconX, iconY, iconWidth, state);
@@ -81,7 +102,6 @@ void ThresholdLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button&
             drawFibonacci(g, iconX, iconY, iconWidth, state);
             break;
         }
-
     }
     
 }
@@ -133,14 +153,15 @@ void ThresholdLookAndFeel::drawThresholdMax(juce::Graphics &g, float x, float y,
     {
         bool indexBool = i >= positionIndex;
         
-        backPath.addRoundedRectangle(x + graphicMargin,
+        backPath.addRoundedRectangle(x + width * 0.25f,
                                     y + graphicHeight * i,
                                     graphicWidth,
                                     graphicHeight - graphicMargin,
                                     graphicHeight/2);
         
-        float xOffset = indexBool ? 0.0f : (graphicWidth/16) * (positionIndex - i);
-        frontPath.addRoundedRectangle(x + graphicMargin + xOffset,
+        float xOffset = indexBool ? 0.0f : (std::sin(position * i) * width * 0.15f);
+        
+        frontPath.addRoundedRectangle(x + width * 0.25f + xOffset,
                                       y + graphicHeight * i,
                                       graphicWidth,
                                       graphicHeight - graphicMargin,
@@ -155,6 +176,40 @@ void ThresholdLookAndFeel::drawThresholdMax(juce::Graphics &g, float x, float y,
 
 }
 
+void ThresholdLookAndFeel::drawValueSlew(juce::Graphics &g, float x, float y, float width, float height, float position)
+{
+    juce::Path linePath, fillPath;
+    juce::Point<float> botLeftCoords = { x + width * 0.1f, y + height * 0.9f };
+    juce::Point<float> topRightCoords = { x + width * 0.9f, y + height * 0.1f };
+
+    juce::Point<float> topMiddleCoords = { x + width * 0.5f, y + height * 0.1f };
+    juce::Point<float> botMiddleCoords = { x + width * 0.5f, y + height * 0.9f };
+    float triangleSize = width * 0.5f * position;
+
+    
+    linePath.startNewSubPath(botLeftCoords);
+    linePath.lineTo(botMiddleCoords.x - triangleSize/2, botMiddleCoords.y );
+    linePath.lineTo(topMiddleCoords.x + triangleSize/2, topMiddleCoords.y );
+    linePath.lineTo(topRightCoords);
+
+    
+    fillPath.addTriangle(topMiddleCoords.x + triangleSize/2,
+                         topMiddleCoords.y,
+                         botMiddleCoords.x + triangleSize/2,
+                         botMiddleCoords.y,
+                         botMiddleCoords.x - triangleSize/2,
+                         botMiddleCoords.y);
+    fillPath = fillPath.createPathWithRoundedCorners(width * 0.05f);
+    
+    g.setColour(graphicGrey.withAlpha((float)0.25f));
+    g.fillPath(fillPath);
+
+    g.setColour(graphicGrey);
+    auto strokeType = juce::PathStrokeType(2.0f, juce::PathStrokeType::JointStyle::curved);
+    strokeType.setEndStyle(juce::PathStrokeType::EndCapStyle::rounded);
+    g.strokePath(linePath, strokeType);
+}
+                                            
 void ThresholdLookAndFeel::drawEquidistant(juce::Graphics &g, float x, float y, float size, bool state)
 {
     juce::Point<float> centerCoords = { x + size/2, y + size/2 };
@@ -183,7 +238,6 @@ void ThresholdLookAndFeel::drawEquidistant(juce::Graphics &g, float x, float y, 
 
 void ThresholdLookAndFeel::drawFill(juce::Graphics &g, float x, float y, float size, bool state)
 {
-    
     float pi = juce::MathConstants<float>::pi;
     float startRadius = size * 0.3f;
     float endRadius = size * 0.45f;
@@ -269,12 +323,6 @@ void ThresholdLookAndFeel::drawRandom(juce::Graphics &g, float x, float y, float
     }
 }
 
-void ThresholdLookAndFeel::drawSequential(juce::Graphics &g, float x, float y, float size, bool state)
-{
-
-    
-}
-
 void ThresholdLookAndFeel::drawFibonacci(juce::Graphics &g, float x, float y, float size, bool state)
 {
      // Fuck you a for loop would've taken a whole day.
@@ -349,12 +397,14 @@ void ThresholdLookAndFeel::drawFibonacciCube(juce::Graphics &g, float x, float y
 
 ThresholdLayout::ThresholdLayout(TingeAudioProcessor &p) : audioProcessor(p)
 {
+    
+    setLabel(*this, thresholdPhaseLabel, "Phase", juce::Justification::centred);
     setSlider(*this, thresholdPhaseDial, phaseLAF);
     thresholdPhaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, "thresholdPhase", thresholdPhaseDial);
 
     
     // max threshold
-    setLabel(*this, thresholdMaxLabel, "Threshold Max", juce::Justification::left);
+    setLabel(*this, thresholdMaxLabel, "Max", juce::Justification::centred);
     thresholdMaxTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, "maxThreshold");
     addAndMakeVisible(*thresholdMaxTextSlider);
     thresholdMaxTextSlider->setUnitStyle(UnitStyle::Int);
@@ -365,6 +415,11 @@ ThresholdLayout::ThresholdLayout(TingeAudioProcessor &p) : audioProcessor(p)
     thresholdMaxAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, "maxThreshold", thresholdMaxDial);
     
 
+    setLabel(*this, valueSlewLabel, "Slew", juce::Justification::centred);
+    setSlider(*this, valueSlewDial, valueSlewLAF);
+    valueSlewAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, "valueSlew", valueSlewDial);
+
+    
     // graphics
     addAndMakeVisible(graphics);
     
@@ -401,29 +456,46 @@ void ThresholdLayout::resized()
     float width = bounds.getWidth();
     float height = bounds.getHeight();
     
-    float iconSize = width * 0.275f;
-    thresholdPhaseDial.setBounds(x + iconSize/2,
-                                 y + height * 0.1f,
+    float iconSize = width * 0.25f;
+    // phase
+    thresholdPhaseLabel.setBounds(x,
+                                 y,
+                                 iconSize,
+                                 height * 0.05f);
+
+    thresholdPhaseDial.setBounds(x,
+                                 y + height * 0.05f,
                                  iconSize,
                                  iconSize);
         
     // max threshold
-    
-    thresholdMaxLabel.setBounds(x + width - iconSize,
-                                 y,
-                                 width * 0.5f,
-                                 height * 0.05f);
-
-    thresholdMaxTextSlider->setBounds(x + iconSize * 2,
+    thresholdMaxLabel.setBounds(x + width/2 - (iconSize/2),
+                                y,
+                                iconSize,
+                                height * 0.05f);
+    /*
+    thresholdMaxTextSlider->setBounds(x + width/2 - (iconSize/2),
                                       y,
                                       iconSize,
                                       iconSize);
-
-    thresholdMaxDial.setBounds(x + iconSize * 2,
-                               y + height * 0.1f,
+     */
+    thresholdMaxDial.setBounds(x + width/2 - (iconSize/2),
+                               y + height * 0.05f,
                                iconSize,
                                iconSize);
      
+    
+    // value slew
+    valueSlewLabel.setBounds(x + width - iconSize,
+                             y,
+                             iconSize,
+                             height * 0.05f);
+
+    valueSlewDial.setBounds(x + width - iconSize,
+                               y + height * 0.05f,
+                               iconSize,
+                               iconSize);
+
     // graphics
     graphics.setBounds(x,
                        y + height * 0.25f,
@@ -432,13 +504,14 @@ void ThresholdLayout::resized()
 
     
     float buttonSize = width * 0.2f;
-    
+    float buttonMargin = buttonSize * 0.1f;
+
     for (int i = 0; i < 5; i++)
     {
-        thresholdModeButton[i].setBounds(x + buttonSize * i,
+        thresholdModeButton[i].setBounds(x + buttonMargin + buttonSize * i,
                                          y + height * 0.7f,
-                                         buttonSize,
-                                         buttonSize);
+                                         buttonSize - buttonMargin,
+                                         buttonSize - buttonMargin);
     }
     
 }

@@ -32,7 +32,7 @@ public:
         for (int i = 1; i < maxThreshold; i++)
         {
             int j = maxThreshold - i;
-            auto angles = thresholdAngles[i] * twopi;
+            auto angles = thresholdAngles[i - 1] * twopi;
             angles = std::fmodf(angles, twopi);
             
             float radius = radiusIncr * i;

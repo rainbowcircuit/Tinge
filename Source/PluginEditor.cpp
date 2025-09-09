@@ -34,10 +34,13 @@ TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, st
 
     addAndMakeVisible(*globalLayout);
 
-    addAndMakeVisible(spinnerControlToggle);
-    spinnerControlToggle.addListener(this);
-    addAndMakeVisible(thresholdControlToggle);
-    thresholdControlToggle.addListener(this);
+    // tab buttons
+    setButton(*this, spinnerTabButton, spinnerTabLAF);
+    spinnerTabButton.addListener(this);
+    
+    setButton(*this, thresholdTabButton, thresholdTabLAF);
+    thresholdTabButton.addListener(this);
+
 
 
     // overlap
@@ -65,9 +68,9 @@ TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, st
 
 TingeAudioProcessorEditor::~TingeAudioProcessorEditor()
 {
-    spinnerControlToggle.removeListener(this);
+    spinnerTabButton.removeListener(this);
     controlWindowToggle.removeListener(this);
-    thresholdControlToggle.removeListener(this);
+    thresholdTabButton.removeListener(this);
 }
 
 //==============================================================================
@@ -164,13 +167,13 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
                             height * 0.1f);
     
     // control toggles
-    spinnerControlToggle.setBounds(xCoords,
+    spinnerTabButton.setBounds(xCoords,
                                    (y + height * 0.95f) - (margin/2),
                                    width * 0.2f,
                                    height * 0.05f);
     
     
-    thresholdControlToggle.setBounds(xCoords + width * 0.2f,
+    thresholdTabButton.setBounds(xCoords + width * 0.2f,
                                    (y + height * 0.95f) - (margin/2),
                                    width * 0.2f,
                                    height * 0.05f);
@@ -210,9 +213,7 @@ void TingeAudioProcessorEditor::timerCallback()
     
     spinnerGraphics.setOverlapIndex(audioProcessor.params->overlap->getSafe());
     
-    overlapLAF.setColor(audioProcessor.params->opacity[0]->getSafe(),
-                        audioProcessor.params->opacity[1]->getSafe(),
-                        audioProcessor.params->opacity[2]->getSafe());
+
      
     overlapSlider.repaint();
     

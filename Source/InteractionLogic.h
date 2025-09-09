@@ -5,7 +5,12 @@
 class Interaction 
 {
 public:
-
+    Interaction(){
+        // spit some random value here
+        juce::Random rand;
+        randomSeed = rand.nextInt();
+    }
+    
     std::array<bool, 16> getInteraction(float startPhase, float shape, std::array<float, 16> &thresholdAngles)
     {
         std::array<bool, 16> thresholdBool;
@@ -71,8 +76,6 @@ public:
                                 
             case thresholdMode::Clusters:
             {
-                juce::Random rand;
-                int randomSeed = rand.nextInt();
                 for (int i = 0; i < numThresholds; i++){
                     float cluster = (randomSeed % 1000) / 1000.0f;
                     float offset = ((randomSeed % 1000) / 1000.0f - 0.5f) * 0.05f;
@@ -81,6 +84,17 @@ public:
                 }
                 break;
             }
+                
+            case thresholdMode::Fibonacci:
+            {
+                for (int i = 0; i < numThresholds; i++){
+                    float fibonacciValues = fibonacci[i];
+                    
+                    thresholdAngles[i] = std::fmod(fibonacciValues + thresholdPhase, 1.0f);
+                }
+                break;
+            }
+
             
             default: // equidistant
             {
@@ -192,6 +206,25 @@ private:
         }
     }
     
-    
+    int randomSeed;
+    std::array<double, 16> fibonacci = {
+        0.000000,  // 1 -> 0
+        0.000000,  // 1 -> 0
+        0.001015,  // 2 -> 0.001015
+        0.002030,  // 3 -> 0.002030
+        0.004061,  // 5 -> 0.004061
+        0.007099,  // 8 -> 0.007099
+        0.012173,  // 13 -> 0.012173
+        0.020284,  // 21 -> 0.020284
+        0.033468,  // 34 -> 0.033468
+        0.054777,  // 55 -> 0.054777
+        0.089249,  // 89 -> 0.089249
+        0.145030,  // 144 -> 0.145030
+        0.235193,  // 233 -> 0.235193
+        0.381340,  // 377 -> 0.381340
+        0.617749,  // 610 -> 0.617749
+        0.999999   // 987 -> 1
+    };
+
     
 };

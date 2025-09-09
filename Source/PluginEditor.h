@@ -52,18 +52,8 @@ public:
     
     void buttonClicked(juce::Button *b) override
     {
-        if (b == &controlWindowToggle)
-        {
-            if (viewState){
-                isoEnterToggle.start();
-                viewState = false;
-            } else {
-                isoExitToggle.start();
-                viewState = true;
-            }
-        }
         
-        if(b == &spinnerControlToggle)
+        if(b == &spinnerTabButton)
         {
             
             rotationLayout1->setVisible(true);
@@ -73,7 +63,7 @@ public:
             controlState = true;
         }
         
-        if(b == &thresholdControlToggle)
+        if(b == &thresholdTabButton)
         {
             rotationLayout1->setVisible(false);
             rotationLayout2->setVisible(false);
@@ -87,13 +77,18 @@ public:
     void buttonStateChanged(juce::Button *) override {}
         
 private:
+    
+    MiscLookAndFeel
+    overlapLAF { MiscLAF::Overlap },
+    spinnerTabLAF { MiscLAF::SpinnerTab },
+    thresholdTabLAF { MiscLAF::ThresholdTab };
+    
     juce::Label overlapLabel;
-    MiscLookAndFeel overlapLAF { MiscLAF::Overlap };
     juce::Slider overlapSlider;
 
     juce::TextButton controlWindowToggle,
-    spinnerControlToggle,
-    thresholdControlToggle;
+    spinnerTabButton,
+    thresholdTabButton;
     
     
     bool viewState = false, controlState = true;

@@ -20,7 +20,7 @@
 
 class TingeAudioProcessor;
 
-enum class ThresholdLAF { Max, Phase, Overlay, Equidistant, Fill, Harmonic, Random, Sequential, Fibonacci};
+enum class ThresholdLAF { Max, Phase, ValueSlew, Equidistant, Fill, Harmonic, Random, Fibonacci};
 class ThresholdLookAndFeel : public juce::LookAndFeel_V4, DrawHelper
 {
 public:
@@ -29,24 +29,23 @@ public:
     void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider) override;
     void drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override;
     
-    
+    //==============================================================================
     void drawThresholdPhase(juce::Graphics &g, float x, float y, float size, float phase, bool isBackGround);
     void drawThresholdMax(juce::Graphics &g, float x, float y, float width, float height, float position);
+    void drawValueSlew(juce::Graphics &g, float x, float y, float width, float height, float position);
     
-    
+    //==============================================================================
     void drawEquidistant(juce::Graphics &g, float x, float y, float size, bool state);
     void drawFill(juce::Graphics &g, float x, float y, float size, bool state);
     void drawHarmonic(juce::Graphics &g, float x, float y, float size, bool state);
     void drawRandom(juce::Graphics &g, float x, float y, float size, bool state);
-    void drawSequential(juce::Graphics &g, float x, float y, float size, bool state);
     void drawFibonacci(juce::Graphics &g, float x, float y, float size, bool state);
     void drawFibonacciCube(juce::Graphics &g, float x, float y, float size, float rotation, float alpha);
     
+private:
     float lineWidth;
-    ThresholdLAF lookAndFeel;
-    
     juce::Colour graphicGrey;
-    
+    ThresholdLAF lookAndFeel;
 };
 
 class ThresholdLayout : public juce::Component, public juce::Button::Listener, public juce::Timer, public GraphicsHelper
@@ -71,7 +70,8 @@ private:
     
     ThresholdLookAndFeel
     maxLAF { ThresholdLAF::Max },
-    phaseLAF { ThresholdLAF::Phase };
+    phaseLAF { ThresholdLAF::Phase },
+    valueSlewLAF { ThresholdLAF::ValueSlew };
 
     
     juce::Slider
@@ -86,7 +86,8 @@ private:
     juce::Label
     thresholdModeLabel,
     thresholdPhaseLabel,
-    thresholdMaxLabel;
+    thresholdMaxLabel,
+    valueSlewLabel;
     
     
     
@@ -94,7 +95,6 @@ private:
     fillButton,
     harmonicButton,
     randomButton,
-    sequentialButton,
     fibonacciButton;
     
     std::array<juce::TextButton, 5> thresholdModeButton;
