@@ -16,7 +16,7 @@
 #include "EditableTextSlider.h"
 #include "GraphicsHelper.h"
 
-enum class SpinnerControlsLAF { Rate, rateMode, Phase, Opacity, Curve };
+enum class SpinnerControlsLAF { Rate, RateMode, Phase, Opacity, Curve };
 
 class SpinnerControlsLookAndFeel : public juce::LookAndFeel_V4, DrawHelper, GraphicsHelper
 {
@@ -71,7 +71,7 @@ private:
     int hover;
     SpinnerControlsLookAndFeel
     rateLAF { SpinnerControlsLAF::Rate },
-    rateModeLAF { SpinnerControlsLAF::rateMode },
+    rateModeLAF { SpinnerControlsLAF::RateMode },
     phaseLAF { SpinnerControlsLAF::Phase },
     curveLAF { SpinnerControlsLAF::Curve },
     opacityLAF { SpinnerControlsLAF::Opacity };

@@ -20,7 +20,7 @@ namespace Colors {
     inline juce::Colour graphicWhiteAlt = { 235, 245, 232 };
 
     inline juce::Colour graphicBlack = { 39, 41, 40 };
-    inline juce::Colour graphicBlackAlt = { 84, 86, 85 };
+    inline juce::Colour graphicBlackAlt = { 49, 51, 50 };
 
     inline juce::Colour graphicGrey = { 209, 204, 161 };
 

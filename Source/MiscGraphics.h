@@ -20,6 +20,8 @@ public:
     
     void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider) override
     {
+        bool hover = slider.isMouseOver();
+        
         switch(lookAndFeel){
             case MiscLAF::Overlap:
             {
@@ -57,6 +59,18 @@ public:
         }
     }
      
+    void prepareColors(bool hover)
+    {
+        colorA = !hover ? Colors::primaryColor[0] : Palette::addFloor(Colors::primaryColor[0], 0.05f);
+        colorB = !hover ? Colors::primaryColor[1] : Palette::addFloor(Colors::primaryColor[1], 0.05f);
+        colorC = !hover ? Colors::primaryColor[2] : Palette::addFloor(Colors::primaryColor[2], 0.05f);
+        
+        colorAB = Palette::darkenColors(colorA, colorB);
+        colorBC = Palette::darkenColors(colorB, colorC);
+        colorAC = Palette::darkenColors(colorA, colorC);
+
+        colorABC = Palette::darkenColors(colorA, colorB, colorC);
+    }
     
     void drawOverlapSlider(juce::Graphics &g, float x, float y, float size, int overlapIndex)
     {
@@ -154,6 +168,8 @@ public:
     
     
 private:
+    juce::Colour colorA, colorB, colorC, colorAB, colorBC, colorAC, colorABC;
+    
     MiscLAF lookAndFeel;
     Palette p;
 };

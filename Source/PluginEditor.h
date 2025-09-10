@@ -19,11 +19,10 @@
 #include "MiscControl.h"
 #include "ThresholdControl.h"
 #include "GraphicsHelper.h"
-#include "UserInterfaceLookAndFeel.h"
 #include "MiscGraphics.h"
+#include "DSP.h"
 //==============================================================================
-/**
-*/
+
 class PresetControlsLayout;
 
 class TingeAudioProcessorEditor  : public juce::AudioProcessorEditor, juce::Button::Listener, juce::Timer, GraphicsHelper
@@ -42,10 +41,10 @@ public:
     void mouseDown(const juce::MouseEvent &m) override
     {
         if (viewState){
-            isoEnterToggle.start();
+            animationSlew.triggerEnvelope(true);
             viewState = false;
         } else {
-            isoExitToggle.start();
+            animationSlew.triggerEnvelope(false);
             viewState = true;
         }
     }
@@ -83,7 +82,6 @@ private:
     spinnerTabLAF { MiscLAF::SpinnerTab },
     thresholdTabLAF { MiscLAF::ThresholdTab };
     
-    juce::Label overlapLabel;
     juce::Slider overlapSlider;
 
     juce::TextButton controlWindowToggle,
@@ -94,6 +92,8 @@ private:
     bool viewState = false, controlState = true;
     float animationValue;
     
+    // trying it out
+    LowPassGate animationSlew;
     
     juce::VBlankAnimatorUpdater updater { this };
     

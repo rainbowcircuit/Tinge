@@ -10,7 +10,6 @@
 
 #include "MiscControl.h"
 
-
 void GlobalControlsLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
 {
     auto bounds = button.getLocalBounds().toFloat();
@@ -18,24 +17,23 @@ void GlobalControlsLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Bu
     float x = bounds.getX();
     float y = bounds.getY();
     float width = bounds.getWidth();
-    float height = bounds.getHeight();
 
     float state = button.getToggleState();
     switch(lookAndFeel)
     {
         case GlobalControlsLAF::NudgeForward:
         {
-            drawLines(g, x, y, width, 0.0f);
+            drawNudge(g, x, y, width, 3.14f);
             break;
         }
         case GlobalControlsLAF::NudgeBackward:
         {
-            drawLines(g, x, y, width, 3.14f);
+            drawNudge(g, x, y, width, 0.0f);
             break;
         }
         case GlobalControlsLAF::Brake:
         {
-            drawLines(g, x, y, width, 4.71f);
+            drawBrake(g, x, y, width);
             break;
         }
         case GlobalControlsLAF::Reset:
@@ -43,6 +41,7 @@ void GlobalControlsLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Bu
             drawReset(g, x, y, width);
             break;
         }
+        case GlobalControlsLAF::Jog: { break; }
         case GlobalControlsLAF::Hold:
         {
             drawHold(g, x, y, width, state);
@@ -57,7 +56,7 @@ void GlobalControlsLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int y
 }
 
 
-void GlobalControlsLookAndFeel::drawLines(juce::Graphics &g, float x, float y, float size, float rotation)
+void GlobalControlsLookAndFeel::drawNudge(juce::Graphics &g, float x, float y, float size, float rotation)
 {
     juce::Path graphicPath;
     for (int i = 0; i < 5; i++)
@@ -78,9 +77,33 @@ void GlobalControlsLookAndFeel::drawLines(juce::Graphics &g, float x, float y, f
 
 }
 
+void GlobalControlsLookAndFeel::drawBrake(juce::Graphics &g, float x, float y, float size)
+{
+    juce::Path topPath, bottomPath;
+    float topHeight = size * 0.8f * lpgValue;
+    float bottomHeight = size * 0.8f * (1.0f - lpgValue);
+
+    topPath.addRoundedRectangle(x + size * 0.05f,
+                                y,
+                                size * 0.9f,
+                                topHeight,
+                                size * 0.1f);
+    
+    bottomPath.addRoundedRectangle(x + size * 0.05f,
+                                   (y + size * 0.2f) + topHeight,
+                                   size * 0.9f,
+                                   bottomHeight,
+                                   size * 0.1f);
+    
+    g.setColour(Colors::graphicBlackAlt);
+    g.fillPath(topPath);
+    g.strokePath(topPath, juce::PathStrokeType(2.0f));
+    g.fillPath(bottomPath);
+    g.strokePath(bottomPath, juce::PathStrokeType(2.0f));
+}
+
 void GlobalControlsLookAndFeel::drawReset(juce::Graphics &g, float x, float y, float size)
 {
-    
     juce::Rectangle<float> graphicBounds = {x, y + size * 0.05f, size, size * 0.9f };
     float reduceAmount = (size * 0.075f) + (lpgValue * size * 0.075f);
     graphicBounds.reduce(reduceAmount, reduceAmount);
@@ -90,7 +113,10 @@ void GlobalControlsLookAndFeel::drawReset(juce::Graphics &g, float x, float y, f
     juce::Path leftPath, middlePath;
     leftPath.startNewSubPath(graphicBounds.getTopLeft());
     leftPath.lineTo(graphicBounds.getBottomLeft());
-    g.strokePath(leftPath, juce::PathStrokeType(2));
+    
+    auto strokeType = juce::PathStrokeType(2.0f, juce::PathStrokeType::JointStyle::curved);
+    strokeType.setEndStyle(juce::PathStrokeType::EndCapStyle::rounded);
+    g.strokePath(leftPath, strokeType);
 
     middlePath.startNewSubPath(graphicBounds.getX() + triangleSize , graphicBounds.getCentreY());
     middlePath.lineTo(graphicBounds.getX() + graphicBounds.getWidth() , graphicBounds.getCentreY());
@@ -99,8 +125,6 @@ void GlobalControlsLookAndFeel::drawReset(juce::Graphics &g, float x, float y, f
                 graphicBounds.getCentreY() },
                  4.71f);
     
-    auto strokeType = juce::PathStrokeType(2.0f, juce::PathStrokeType::JointStyle::curved);
-    strokeType.setEndStyle(juce::PathStrokeType::EndCapStyle::rounded);
     g.strokePath(middlePath, strokeType);
 
 }
@@ -120,43 +144,41 @@ void GlobalControlsLookAndFeel::drawTriangle(juce::Graphics& g, float size, juce
 
 void GlobalControlsLookAndFeel::drawJog(juce::Graphics &g, float x, float y, float size, float position)
 {
-    float pi = juce::MathConstants<float>::pi;
-    float dialStart = 1.25f * pi;
-    float dialEnd = 2.75f * pi;
-    float sliderPositionScaled = 2.0f + (1.0f - position);
-    float dialPositionInRadians = dialStart + sliderPositionScaled * (dialEnd - dialStart);
-    
-    juce::Path dialBodyPath, dialDotPath, dialOutlinePath;
-    float dialOutlineRadius = (size * 0.9f)/2;
-    float dialBodyRadius = (size * 0.75f)/2;
-    float dialDotRadius = (size * 0.45f)/2;
+    x = x + size * 0.1f;
+    y = y + size * 0.1f;
+    size *= 0.8f;
 
-    dialOutlinePath.addCentredArc(x + size/2, y + size/2,
-                                  dialOutlineRadius, dialOutlineRadius,
-                               0.0f, dialStart, dialEnd, true);
     g.setColour(Colors::graphicBlackAlt);
-    g.strokePath(dialOutlinePath, juce::PathStrokeType(1.5f));
-    
-    //==============================================================================
-    // dial body
-    dialBodyPath.addCentredArc(x + size/2, y + size/2,
-                               dialBodyRadius, dialBodyRadius,
-                               0.0f, 0.0f, 6.28f, true);
-    g.setColour(Colors::graphicBlackAlt);
-    g.fillPath(dialBodyPath);
 
-    //==============================================================================
-    // dial dot
-    juce::Point<float> outlineCoords = {x + size/2 + std::sin(dialPositionInRadians) * dialDotRadius,
-        x + size/2 + std::cos(dialPositionInRadians) * dialDotRadius};
-    juce::Point<float> startCoords = {x + size/2 + std::sin(dialStart) * dialDotRadius,
-        x + size/2 + std::cos(dialStart) * dialDotRadius};
-
-    dialDotPath.addCentredArc(outlineCoords.x, outlineCoords.y,
-                              1.5, 1.5, 0.0f, 0.0f, pi * 2, true);
+    juce::Path linePath, dotPath;
+    linePath.addCentredArc(x + size,
+                           y + size,
+                           size,
+                           size,
+                           0.0f,
+                           4.71f,
+                           6.28f,
+                           true);
     
-    g.setColour(Colors::backgroundFill);
-    g.fillPath(dialDotPath);
+    auto strokeType = juce::PathStrokeType(2.0f, juce::PathStrokeType::JointStyle::curved);
+    strokeType.setEndStyle(juce::PathStrokeType::EndCapStyle::rounded);
+    g.strokePath(linePath, strokeType);
+
+    
+    float dotRadius = size * 0.1f;
+    float posScaled = 3.14f + position * 1.57;
+    juce::Point dotCoords = { x + size + std::cos(posScaled) * size,
+        y + size + std::sin(posScaled) * size };
+    dotPath.addCentredArc(dotCoords.x,
+                          dotCoords.y,
+                          dotRadius,
+                          dotRadius,
+                          0.0f,
+                          0.0f,
+                          6.28f,
+                          true);
+    
+    g.fillPath(dotPath);
 }
 
 void GlobalControlsLookAndFeel::drawHold(juce::Graphics &g, float x, float y, float size, bool state)
@@ -196,52 +218,48 @@ void GlobalControlsLookAndFeel::setLPGValue(float lpgValue)
 
 GlobalControlsLayout::GlobalControlsLayout(TingeAudioProcessor &p) : audioProcessor(p)
 {
+    // nudge
+    setLabel(*this, nudgeLabel, "Nudge", Colors::graphicBlack, juce::Justification::centred);
+    nudgeForwardButton = std::make_unique<GlobalHoldableButton>(audioProcessor, HoldableButtonLAF::NudgeForward);
+    addAndMakeVisible(*nudgeForwardButton);
     
-    setLabel(*this, nudgeLabel, "Nudge", juce::Justification::centred);
-    setButton(*this, nudgeForwardButton, nudgeForwardLAF);
-    nudgeForwardButton.addListener(this);
+    nudgeBackwardButton = std::make_unique<GlobalHoldableButton>(audioProcessor, HoldableButtonLAF::NudgeBackward);
+    addAndMakeVisible(*nudgeBackwardButton);
 
-    setButton(*this, nudgeBackwardButton, nudgeBackwardLAF);
-    nudgeBackwardButton.addListener(this);
+    setLabel(*this, brakeLabel, "Brake", Colors::graphicBlack, juce::Justification::centred);
+    brakeButton = std::make_unique<GlobalHoldableButton>(audioProcessor, HoldableButtonLAF::Brake);
+    addAndMakeVisible(*brakeButton);
 
-    setLabel(*this, brakeLabel, "Brake", juce::Justification::centred);
-    setButton(*this, brakeButton, brakeLAF);
-    brakeButton.addListener(this);
-
-    setLabel(*this, jogLabel, "Jog", juce::Justification::centred);
+    // jog
+    setLabel(*this, jogLabel, "Jog", Colors::graphicBlack, juce::Justification::centred);
     setSlider(*this, jogSlider, jogLAF);
-    
-    setLabel(*this, resetLabel, "Reset", juce::Justification::centred);
-    setButton(*this, resetButton, resetLAF);
-    resetButton.addListener(this);
-    
- //   setLabel(*this, resetLabel, "Reset", juce::Justification::centred);
+    jogAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, "jog", jogSlider);
+
+    // hold
+    setLabel(*this, holdLabel, "Hold", Colors::graphicBlack, juce::Justification::centred);
     setButton(*this, holdButton, holdLAF);
     holdButton.addListener(this);
     holdButton.setToggleable(true);
     holdButton.setClickingTogglesState(true);
     holdButton.setToggleState(false, juce::dontSendNotification);
+
+    // reset
+    setLabel(*this, resetLabel, "Reset", Colors::graphicBlack, juce::Justification::centred);
+    setButton(*this, resetButton, resetLAF);
+    resetButton.addListener(this);
     
-    nudgeForwardSlew.setSampleRate(60);
-    nudgeForwardSlew.setEnvelopeSlew(240, 240);
-    nudgeBackwardSlew.setSampleRate(60);
-    nudgeBackwardSlew.setEnvelopeSlew(240, 240);
-    brakeSlew.setSampleRate(60);
-    brakeSlew.setEnvelopeSlew(240, 240);
+    // set up slew values
     resetSlew.setSampleRate(60);
     resetSlew.setEnvelopeSlew(240, 240);
 
+    // set up timer
     startTimerHz(60);
 }
 
 GlobalControlsLayout::~GlobalControlsLayout()
 {
-    nudgeForwardButton.removeListener(this);
-    nudgeBackwardButton.removeListener(this);
-    brakeButton.removeListener(this);
     resetButton.removeListener(this);
 }
-
 
 void GlobalControlsLayout::resized()
 {
@@ -251,7 +269,7 @@ void GlobalControlsLayout::resized()
     float width = bounds.getWidth();
     float height = bounds.getHeight();
 
-    float buttonSize = height * 0.75f;
+    float buttonSize = height * 0.725f;
     float margin = width * 0.05f;
     
     // nudge
@@ -260,38 +278,49 @@ void GlobalControlsLayout::resized()
                          buttonSize * 2.0f,
                          getFontSize());
     
-    nudgeBackwardButton.setBounds(x + buttonSize/2,
+    nudgeBackwardButton->setBounds(x + buttonSize/2,
                                  y + height * 0.05f,
                                  buttonSize,
                                  buttonSize);
     
-    nudgeForwardButton.setBounds((x + buttonSize/2) + buttonSize,
+    nudgeForwardButton->setBounds((x + buttonSize/2) + buttonSize,
                                  y + height * 0.05f,
                                  buttonSize,
                                  buttonSize);
 
     // brake
-    brakeLabel.setBounds((x + buttonSize/2) + buttonSize * 2.0f,
+    brakeLabel.setBounds((x + buttonSize/2) + buttonSize * 2.25f,
                          height * 0.775f,
                          buttonSize,
                          getFontSize());
     
-    brakeButton.setBounds((x + buttonSize/2) + buttonSize * 2.0f,
+    brakeButton->setBounds((x + buttonSize/2) + buttonSize * 2.25f,
                           y + height * 0.05f,
                           buttonSize,
                           buttonSize);
 
     // jog
-    jogLabel.setBounds((x + buttonSize/2) + buttonSize * 4.0f,
+    jogLabel.setBounds((x + buttonSize/2) + buttonSize * 3.5f,
                          height * 0.775f,
                          buttonSize,
                          getFontSize());
 
     
-    jogSlider.setBounds((x + buttonSize/2) + buttonSize * 4.0f,
+    jogSlider.setBounds((x + buttonSize/2) + buttonSize * 3.5f,
                         height * 0.05f,
                         buttonSize,
                         buttonSize);
+
+    // hold
+    holdLabel.setBounds(x + width - margin - buttonSize * 2.25f,
+                         height * 0.775f,
+                         buttonSize,
+                         getFontSize());
+
+    holdButton.setBounds(x + width - margin - buttonSize * 2.25f,
+                          y + height * 0.05f,
+                          buttonSize,
+                          buttonSize);
 
     // reset
     resetLabel.setBounds(x + width - margin - buttonSize,
@@ -303,12 +332,6 @@ void GlobalControlsLayout::resized()
                           y + height * 0.05f,
                           buttonSize,
                           buttonSize);
-    
-    holdButton.setBounds(x + width - margin - buttonSize * 2,
-                          y + height * 0.05f,
-                          buttonSize,
-                          buttonSize);
-
 }
 
 void GlobalControlsLayout::buttonClicked(juce::Button* b)
@@ -324,25 +347,12 @@ void GlobalControlsLayout::buttonClicked(juce::Button* b)
 
 void GlobalControlsLayout::buttonStateChanged(juce::Button* b)
 {
-    if (b == &nudgeForwardButton) {
-        
-        float nudgeValue = b->isDown() ? 1.0f : 0.0f;
-        nudgeForwardSlew.triggerEnvelope(b->isDown());
-        audioProcessor.params->apvts.getParameter("nudgeForward")->setValueNotifyingHost(nudgeValue);
-        
-    } else if (b == &nudgeBackwardButton)
+    if (!b->isMouseButtonDown() && b->isMouseOver() && b->isDown())
     {
-        float nudgeValue = b->isDown() ? 1.0f : 0.0f;
-        nudgeBackwardSlew.triggerEnvelope(b->isDown());
-        audioProcessor.params->apvts.getParameter("nudgeBackward")->setValueNotifyingHost(nudgeValue);
-        
-    } else if (b == &brakeButton)
-    {
-        float brake = b->isDown() ? 1.0f : 0.0f;
-        brakeSlew.triggerEnvelope(b->isDown());
-        audioProcessor.params->apvts.getParameter("brake")->setValueNotifyingHost(brake);
-        
-    } else if (b == &resetButton)
+        return;
+    }
+
+     if (b == &resetButton)
     {
         float reset = b->isDown() ? 1.0f : 0.0f;
         resetSlew.triggerEnvelope(b->isDown());
@@ -353,18 +363,6 @@ void GlobalControlsLayout::buttonStateChanged(juce::Button* b)
 
 void GlobalControlsLayout::timerCallback()
 {
-    float nudgeForward = nudgeForwardSlew.generateEnvelope();
-    nudgeForwardLAF.setLPGValue(nudgeForward);
-    nudgeForwardButton.repaint();
-    
-    float nudgeBackward = nudgeBackwardSlew.generateEnvelope();
-    nudgeBackwardLAF.setLPGValue(nudgeBackward);
-    nudgeBackwardButton.repaint();
-
-    float brake = brakeSlew.generateEnvelope();
-    brakeLAF.setLPGValue(brake);
-    brakeButton.repaint();
-    
     float reset = resetSlew.generateEnvelope();
     resetLAF.setLPGValue(reset);
     resetButton.repaint();

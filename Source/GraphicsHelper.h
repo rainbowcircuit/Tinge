@@ -30,13 +30,14 @@ public:
     }
 
     
-    void setLabel(juce::Component& parent, juce::Label& label, juce::String labelText, juce::Justification justification)
+    void setLabel(juce::Component& parent, juce::Label& label, juce::String labelText, juce::Colour textColor, juce::Justification justification)
     {
         juce::FontOptions font(12.0f, juce::Font::plain);
         parent.addAndMakeVisible(label);
         label.setText(labelText, juce::dontSendNotification);
         label.setColour(juce::Label::textColourId, juce::Colour(80, 80, 80));
         label.setJustificationType(justification);
+        label.setColour(juce::Label::textColourId, textColor);
         label.setFont(font);
     }
     

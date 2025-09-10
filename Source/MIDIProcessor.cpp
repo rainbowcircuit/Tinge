@@ -193,16 +193,16 @@ void Spinner::playhead(juce::AudioPlayHead* playhead)
     
     // playhead and reset
     bool isPlaying = pos.getIsPlaying();
-    if (!isPlaying && prevIsPlaying) {
+    if (isPlaying && !prevIsPlaying) {
         reset();
     }
     prevIsPlaying = isPlaying;
 }
 
-void Spinner::nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, float brakeStrength, int brake)
+void Spinner::nudge(int nudgeForward, int nudgeBackward, int brake, float jog)
 {
-    float nudgeRiseScaled = nudgeStrength * 400.0f;
-    float nudgeFallScaled = nudgeStrength * 100.0f;
+    float nudgeRiseScaled = jog * 400.0f;
+    float nudgeFallScaled = jog * 100.0f;
     
     if (nudgeFallScaled <= sampleRate/20.0f) { nudgeFallScaled = sampleRate/20.0f; }
     else if (nudgeFallScaled >= sampleRate/2.0f) { nudgeFallScaled = sampleRate/2.0f; }
@@ -210,7 +210,7 @@ void Spinner::nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, fl
     forwardLPG.setEnvelopeSlew(nudgeRiseScaled, nudgeFallScaled);
     backwardLPG.setEnvelopeSlew(nudgeRiseScaled, nudgeFallScaled);
     
-    float brakeTimeScaled = brakeStrength * 100.0f;
+    float brakeTimeScaled = jog * 100.0f;
     
     brakeLPG.setEnvelopeSlew(brakeTimeScaled, brakeTimeScaled);
 

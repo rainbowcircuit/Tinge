@@ -82,12 +82,12 @@ private:
     std::unique_ptr<EditableTextBoxSlider>
     thresholdMaxTextSlider;
 
-    
     juce::Label
-    thresholdModeLabel,
     thresholdPhaseLabel,
     thresholdMaxLabel,
-    valueSlewLabel;
+    valueSlewLabel,
+    thresholdModeLabel,
+    thresholdModeValueLabel;
     
     
     

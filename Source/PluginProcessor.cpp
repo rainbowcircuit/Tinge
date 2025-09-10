@@ -165,11 +165,10 @@ void TingeAudioProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::
                             params->phase[i]->get(),
                             params->curve[i]->get());
         
-        rotation[i].nudge(params->nudgeStrength->get(),
-                          params->nudgeForward->get(),
+        rotation[i].nudge(params->nudgeForward->get(),
                           params->nudgeBackward->get(),
-                          params->brakeStrength->get(),
-                          params->brake->get());
+                          params->brake->get(),
+                          params->jog->get());
         
         rotation[i].resetMode(params->resetMode->get(),
                               midiProcessor.getNumHeldNotes(),

@@ -15,10 +15,10 @@
 class TingeAudioProcessor;
 class ParameterInstance;
 class Parameters
-
 {
 public:
     Parameters(TingeAudioProcessor& p);
+    
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
     static juce::StringArray getSyncRateOptions()
     {
@@ -42,9 +42,6 @@ public:
         };
     }
     
-    
-    
-    
 private:
     TingeAudioProcessor& audioProcessor;
     
@@ -55,8 +52,10 @@ public:
     rateFree, rateSync, rateMode, phase, curve, opacity;
     
     std::unique_ptr<ParameterInstance>
-    nudgeForward, nudgeBackward, nudgeStrength,
-    brake, brakeStrength,
+    nudgeForward,
+    nudgeBackward,
+    brake,
+    jog,
     hold,
     overlap,
     reset, resetMode,
@@ -67,11 +66,9 @@ public:
     
 };
 
-
 class ParameterInstance : public juce::AudioProcessorParameter::Listener, juce::AsyncUpdater
 {
 public:
-    
     ParameterInstance(TingeAudioProcessor& p, Parameters& pm, juce::String paramID);
     
     //==============================================================================

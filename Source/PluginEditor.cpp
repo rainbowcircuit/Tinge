@@ -16,54 +16,49 @@ TingeAudioProcessorEditor::TingeAudioProcessorEditor (TingeAudioProcessor& p, st
     addAndMakeVisible(spinnerGraphics);
     spinnerGraphics.setInterceptsMouseClicks(false, false);
     
-    presetLayout = std::make_unique<PresetControlsLayout>(audioProcessor, *this, audioProcessor.params->apvts);
-
-    rotationLayout1 = std::make_unique<SpinnerLayout>(audioProcessor, 0);
-    rotationLayout2 = std::make_unique<SpinnerLayout>(audioProcessor, 1);
-    rotationLayout3 = std::make_unique<SpinnerLayout>(audioProcessor, 2);
-    
-    thresholdLayout = std::make_unique<ThresholdLayout>(audioProcessor);
-
+    // global controls layout
     globalLayout = std::make_unique<GlobalControlsLayout>(audioProcessor);
-    
-    addAndMakeVisible(*presetLayout);
-    addAndMakeVisible(*rotationLayout1);
-    addAndMakeVisible(*rotationLayout2);
-    addAndMakeVisible(*rotationLayout3);
-    addAndMakeVisible(*thresholdLayout);
-
     addAndMakeVisible(*globalLayout);
+
+    // rotation layout
+    rotationLayout1 = std::make_unique<SpinnerLayout>(audioProcessor, 0);
+    addAndMakeVisible(*rotationLayout1);
+
+    rotationLayout2 = std::make_unique<SpinnerLayout>(audioProcessor, 1);
+    addAndMakeVisible(*rotationLayout2);
+
+    rotationLayout3 = std::make_unique<SpinnerLayout>(audioProcessor, 2);
+    addAndMakeVisible(*rotationLayout3);
+
+    // threshold layout
+    thresholdLayout = std::make_unique<ThresholdLayout>(audioProcessor);
+    addAndMakeVisible(*thresholdLayout);
 
     // tab buttons
     setButton(*this, spinnerTabButton, spinnerTabLAF);
     spinnerTabButton.addListener(this);
-    
     setButton(*this, thresholdTabButton, thresholdTabLAF);
     thresholdTabButton.addListener(this);
 
-
-
     // overlap
-    setLabel(*this, overlapLabel, "Overlap", juce::Justification::centred);
-    
     setSlider(*this, overlapSlider, overlapLAF);
     overlapAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, "overlap", overlapSlider);
     
-
+    // editor size and animation setup
     setSize (550, 550);
     startTimerHz(60);
-    
-    updater.addAnimator(isoEnterToggle);
-    updater.addAnimator(isoExitToggle);
- 
-    controlState = audioProcessor.params->apvts.state.getProperty("controlState", 0);
-    viewState = audioProcessor.params->apvts.state.getProperty("viewState", 0);
-    rotationLayout1->setVisible(!controlState);
-    rotationLayout2->setVisible(!controlState);
-    rotationLayout3->setVisible(!controlState);
-    thresholdLayout->setVisible(controlState);
+    animationSlew.setSampleRate(60);
 
     
+    // initialize parameters
+    controlState = audioProcessor.params->apvts.state.getProperty("controlState", 0);
+    
+    viewState = audioProcessor.params->apvts.state.getProperty("viewState", 0);
+    rotationLayout1->setVisible(controlState);
+    rotationLayout2->setVisible(controlState);
+    rotationLayout3->setVisible(controlState);
+    thresholdLayout->setVisible(!controlState);
+
 }
 
 TingeAudioProcessorEditor::~TingeAudioProcessorEditor()
@@ -80,24 +75,32 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
     g.fillAll();
     
     auto bounds = getLocalBounds().toFloat();
-    bounds.reduce(getMargin(), getMargin());
     float x = bounds.getX();
     float y = bounds.getY();
     float width = bounds.getWidth();
     float height = bounds.getHeight();
-
-    juce::Path bgFillPath;
-    float xCoords = (animationValue * width * 0.4f) + width * 0.6f;
     float margin = width * 0.02f;
-    
-    juce::Rectangle<float> bgFillBounds = {xCoords,
+    bounds.reduce(margin, margin);
+
+    float controlWidth = width * 0.4f;
+    float controlXPosition = x + (animationValue * controlWidth * 1.25f) + (width * 0.6f) - (margin/2);
+
+    // backgrounds
+    juce::Path bgFillPath, bgAltFillPath;
+    juce::Rectangle<float> bgFillBounds = { controlXPosition,
         y + margin * 0.5f,
-        width * 0.4f,
-        height - margin};
+        controlWidth,
+        height - margin };
     
-    float tabHeight = height * 0.05f;
+    bgAltFillPath.addRectangle(bgFillBounds);
+    bgAltFillPath = bgAltFillPath.createPathWithRoundedCorners(margin);
+    g.setColour(Colors::graphicBlackAlt);
+    g.fillPath(bgAltFillPath);
+
+    float tabHeight = height * 0.0625f;
     float tabRightHeight = !controlState ? 0.0f : tabHeight;
     float tabLeftHeight = controlState ? 0.0f : tabHeight;
+
 
     bgFillPath.startNewSubPath(bgFillBounds.getTopLeft());
     bgFillPath.lineTo(bgFillBounds.getTopRight());
@@ -121,40 +124,37 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
 
     g.setColour(Colors::graphicBlack);
     g.fillPath(bgFillPath);
-    g.setColour(Colors::backgroundFillAlt);
-    g.strokePath(bgFillPath, juce::PathStrokeType(1.5f));
     
-    float controlWidth = width * 0.4f;
     
     // overlap control
-    overlapSlider.setBounds(x,
-                            y,
+    overlapSlider.setBounds(x + margin,
+                            y + margin,
                             height * 0.125f,
                             height * 0.125f);
     overlapSlider.setMouseDragSensitivity(height * 0.25f);
 
-    rotationLayout1->setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - (margin * 0.5f),
+    // rotation
+    rotationLayout1->setBounds(controlXPosition,
                                y + margin * 0.5f,
                                controlWidth,
-                               height * 0.3f);
+                               height * 0.295f);
 
-
-    rotationLayout2->setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - (margin * 0.5f),
+    rotationLayout2->setBounds(controlXPosition,
                                y + margin + height * 0.3f,
                                controlWidth,
-                               height * 0.3f);
+                               height * 0.295f);
     
-    rotationLayout3->setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - (margin * 0.5f),
+    rotationLayout3->setBounds(controlXPosition,
                                y + margin + height * 0.6f,
                                controlWidth,
-                               height * 0.3f);
+                               height * 0.295f);
     
-    thresholdLayout->setBounds(x + (animationValue * controlWidth) + (width * 0.6f) - (margin * 0.5f),
+    thresholdLayout->setBounds(controlXPosition,
                                y + margin,
                                controlWidth,
-                               height);
-
-    
+                               height - tabHeight);
+        
+    // spinner
     spinnerGraphics.setAnimation(animationValue);
     spinnerGraphics.setBounds(0,
                               0,
@@ -162,21 +162,20 @@ void TingeAudioProcessorEditor::paint (juce::Graphics& g)
                               height * 0.875f);
         
     globalLayout->setBounds(0,
-                            height * 0.9f,
+                            height * 0.875f,
                             (int)(animationValue * width * 0.4f) + (width * 0.6f),
                             height * 0.1f);
     
     // control toggles
-    spinnerTabButton.setBounds(xCoords,
-                                   (y + height * 0.95f) - (margin/2),
+    spinnerTabButton.setBounds(controlXPosition,
+                                   (y + height - tabHeight) - (margin/2),
                                    width * 0.2f,
-                                   height * 0.05f);
+                                   tabHeight);
     
-    
-    thresholdTabButton.setBounds(xCoords + width * 0.2f,
-                                   (y + height * 0.95f) - (margin/2),
+    thresholdTabButton.setBounds(controlXPosition + width * 0.2f,
+                                   (y + height - tabHeight) - (margin/2),
                                    width * 0.2f,
-                                   height * 0.05f);
+                                   tabHeight);
      
 }
 
@@ -190,6 +189,10 @@ void TingeAudioProcessorEditor::resized()
 
 void TingeAudioProcessorEditor::timerCallback()
 {
+    animationSlew.setEnvelopeSlew(3000.0f, 3000.0f);
+    animationValue = animationSlew.generateEnvelope();
+    repaint();
+    
     phases = phasesAtomic.load();
     for (int index = 0; index < 3; index++)
     {

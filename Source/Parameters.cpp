@@ -14,15 +14,15 @@ Parameters::Parameters(TingeAudioProcessor& p) : audioProcessor(p),
 apvts(audioProcessor, nullptr, "Parameters", createParameterLayout())
 {
     
-    nudgeStrength = std::make_unique<ParameterInstance>(audioProcessor, *this, "nudgeStrength");
     nudgeForward = std::make_unique<ParameterInstance>(audioProcessor, *this, "nudgeForward");
     nudgeBackward = std::make_unique<ParameterInstance>(audioProcessor, *this, "nudgeBackward");
-    brakeStrength = std::make_unique<ParameterInstance>(audioProcessor, *this, "brakeStrength");
     brake = std::make_unique<ParameterInstance>(audioProcessor, *this, "brake");
+    jog = std::make_unique<ParameterInstance>(audioProcessor, *this, "jog");
+
+    hold = std::make_unique<ParameterInstance>(audioProcessor, *this, "hold");
     reset = std::make_unique<ParameterInstance>(audioProcessor, *this, "reset");
     resetMode = std::make_unique<ParameterInstance>(audioProcessor, *this, "resetMode");
     
-    hold = std::make_unique<ParameterInstance>(audioProcessor, *this, "hold");
 
     overlap = std::make_unique<ParameterInstance>(audioProcessor, *this, "overlap");
     valueSlew = std::make_unique<ParameterInstance>(audioProcessor, *this, "valueSlew");
@@ -51,10 +51,6 @@ Parameters::createParameterLayout()
 {
     juce::AudioProcessorValueTreeState::ParameterLayout layout;
 
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "nudgeStrength", 1},
-                                                           "Nudge Strength",
-                                                           juce::NormalisableRange<float> { 0.0f, 100.0f, 0.1 }, 100.0f));
-    
     layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "nudgeForward", 1},
                                                          "Nudge Forward",
                                                          0, 1, 0));
@@ -62,15 +58,15 @@ Parameters::createParameterLayout()
     layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "nudgeBackward", 1},
                                                      "Nudge Backward",
                                                      0, 1, 0));
-
-    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "brakeStrength", 1},
-                                                           "Brake Strength",
-                                                           juce::NormalisableRange<float> { 0.0f, 100.0f, 0.1 }, 100.0f));
     
     layout.add(std::make_unique<juce::AudioParameterInt>(juce::ParameterID { "brake", 1},
                                                  "Brake",
                                                  0, 1, 0));
     
+    layout.add(std::make_unique<juce::AudioParameterFloat>(juce::ParameterID { "jog", 1},
+                                                           "Jog",
+                                                           juce::NormalisableRange<float> { 0.0f, 100.0f, 0.1 }, 100.0f));
+
     layout.add(std::make_unique<juce::AudioParameterBool>(juce::ParameterID { "reset", 1},
                                                           "Reset",
                                                            false));

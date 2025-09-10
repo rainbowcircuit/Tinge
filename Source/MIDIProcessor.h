@@ -169,7 +169,7 @@ public:
     void setRate(int rateBPM, float rateFree, bool isSynced, float phase, float curve);
     void playhead(juce::AudioPlayHead* playhead);
 
-    void nudge(float nudgeStrength, int nudgeForward, int nudgeBackward, float brakeStrength, int brake);
+    void nudge(int nudgeForward, int nudgeBackward, int brake, float jog);
 
     void accumulate();
     float getPhase();

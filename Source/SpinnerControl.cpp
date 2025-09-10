@@ -34,7 +34,7 @@ void SpinnerControlsLookAndFeel::drawRotarySlider(juce::Graphics &g, int x, int 
             drawRate(g, xPos, yPos, graphicWidth, graphicHeight, sliderPosProportional);
             break;
         }
-
+        case SpinnerControlsLAF::RateMode: { break; }
         case SpinnerControlsLAF::Phase:
         {
             drawPhase(g, xPos, yPos, graphicWidth, graphicHeight, 0.0f, false);
@@ -74,7 +74,6 @@ void SpinnerControlsLookAndFeel::drawToggleButton(juce::Graphics& g, juce::Toggl
     g.setColour(primaryColor);
     if (button.getToggleState()) { g.fillPath(graphicPath); }
     else { g.strokePath(graphicPath, juce::PathStrokeType(1.5f)); }
-
 }
 
 void SpinnerControlsLookAndFeel::drawRate(juce::Graphics& g, float x, float y, float width, float height, float pos)
@@ -300,10 +299,8 @@ SpinnerLayout::SpinnerLayout(TingeAudioProcessor &p, int index) : audioProcessor
     rateSyncAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, rateSyncID, rateSyncDisplaySlider);
 
     // rate
-    setLabel(*this, rateLabel, "Rate", juce::Justification::left);
-    rateLabel.setColour(juce::Label::textColourId, Colors::textColor);
-    setLabel(*this, rateModeLabel, "Sync/Free", juce::Justification::left);
-    rateModeLabel.setColour(juce::Label::textColourId, Colors::textColor);
+    setLabel(*this, rateLabel, "Rate", Colors::textColor, juce::Justification::left);
+    setLabel(*this, rateModeLabel, "Sync/Free", Colors::textColor, juce::Justification::left);
 
     // rate text slider
     rateFreeTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, rateFreeID);
@@ -321,12 +318,8 @@ SpinnerLayout::SpinnerLayout(TingeAudioProcessor &p, int index) : audioProcessor
     rateSyncTextSlider->setJustification(juce::Justification::left);
     rateSyncTextSlider->setVisible(!rateMode);
     
-    
-
-    // phase
-    setLabel(*this, phaseLabel, "Phase", juce::Justification::centred);
-    phaseLabel.setColour(juce::Label::textColourId, Colors::textColor);
-
+        // phase
+    setLabel(*this, phaseLabel, "Phase", Colors::textColor, juce::Justification::centred);
     phaseLAF.setIndex(index);
     setSlider(*this, phaseDialSlider, phaseLAF);
     juce::String phaseID = "phase" + juce::String(index);
@@ -334,18 +327,14 @@ SpinnerLayout::SpinnerLayout(TingeAudioProcessor &p, int index) : audioProcessor
 
     
     // opacity
-    setLabel(*this, opacityLabel, "Opacity", juce::Justification::centred);
-    opacityLabel.setColour(juce::Label::textColourId, Colors::textColor);
-
+    setLabel(*this, opacityLabel, "Opacity", Colors::textColor, juce::Justification::centred);
     opacityLAF.setIndex(index);
     setSlider(*this, opacityDialSlider, opacityLAF);
     juce::String opacityID = "opacity" + juce::String(index);
     opacityAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, opacityID, opacityDialSlider);
 
     // shape
-    setLabel(*this, curveLabel, "Curve", juce::Justification::centred);
-    curveLabel.setColour(juce::Label::textColourId, Colors::textColor);
-
+    setLabel(*this, curveLabel, "Curve", Colors::textColor, juce::Justification::centred);
     curveLAF.setIndex(index);
     setSlider(*this, curveDialSlider, curveLAF);
     juce::String curveID = "curve" + juce::String(index);

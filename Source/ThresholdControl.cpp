@@ -52,8 +52,6 @@ void ThresholdLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button&
     float y = bounds.getY();
     float width = bounds.getWidth();
     
-    
-    
     bool hover = button.isMouseOver();
     graphicGrey = !hover ? Colors::graphicGrey : Palette::addFloor(Colors::graphicGrey, 0.05f);
 
@@ -62,16 +60,12 @@ void ThresholdLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button&
     
     g.setColour(graphicGrey.withAlpha((float)alpha));
     g.fillRoundedRectangle(x, y, width, width, width * 0.15f);
-
     
     auto iconBounds = bounds;
     iconBounds.reduce(width * 0.2f, width * 0.2f);
     float iconX = iconBounds.getX();
     float iconY = iconBounds.getY();
     float iconWidth = iconBounds.getWidth();
-
-    
-    
 
     switch(lookAndFeel){
         case ThresholdLAF::Max: { break; }
@@ -325,7 +319,7 @@ void ThresholdLookAndFeel::drawRandom(juce::Graphics &g, float x, float y, float
 
 void ThresholdLookAndFeel::drawFibonacci(juce::Graphics &g, float x, float y, float size, bool state)
 {
-     // Fuck you a for loop would've taken a whole day.
+     // Fuck you a loop would've taken me a whole day.
     float scale = size/21;
     x += scale * 4;
     std::array<int, 7> fib = { 1, 1, 2, 3, 5, 8, 13 };
@@ -397,25 +391,18 @@ void ThresholdLookAndFeel::drawFibonacciCube(juce::Graphics &g, float x, float y
 
 ThresholdLayout::ThresholdLayout(TingeAudioProcessor &p) : audioProcessor(p)
 {
-    
-    setLabel(*this, thresholdPhaseLabel, "Phase", juce::Justification::centred);
+    // phase
+    setLabel(*this, thresholdPhaseLabel, "Phase", Colors::textColor, juce::Justification::centred);
     setSlider(*this, thresholdPhaseDial, phaseLAF);
     thresholdPhaseAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, "thresholdPhase", thresholdPhaseDial);
-
     
     // max threshold
-    setLabel(*this, thresholdMaxLabel, "Max", juce::Justification::centred);
-    thresholdMaxTextSlider = std::make_unique<EditableTextBoxSlider>(audioProcessor, "maxThreshold");
-    addAndMakeVisible(*thresholdMaxTextSlider);
-    thresholdMaxTextSlider->setUnitStyle(UnitStyle::Int);
-    thresholdMaxTextSlider->setJustification(juce::Justification::left);
-    thresholdMaxTextSlider->setFontSize(12.0f);
-
+    setLabel(*this, thresholdMaxLabel, "Max", Colors::textColor, juce::Justification::centred);
     setSlider(*this, thresholdMaxDial, maxLAF);
     thresholdMaxAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, "maxThreshold", thresholdMaxDial);
     
-
-    setLabel(*this, valueSlewLabel, "Slew", juce::Justification::centred);
+    // value slew
+    setLabel(*this, valueSlewLabel, "Slew", Colors::textColor, juce::Justification::centred);
     setSlider(*this, valueSlewDial, valueSlewLAF);
     valueSlewAttachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(audioProcessor.params->apvts, "valueSlew", valueSlewDial);
 
@@ -423,7 +410,9 @@ ThresholdLayout::ThresholdLayout(TingeAudioProcessor &p) : audioProcessor(p)
     // graphics
     addAndMakeVisible(graphics);
     
-    
+    setLabel(*this, thresholdModeLabel, "Threshold Mode", Colors::textColor, juce::Justification::left);
+    setLabel(*this, thresholdModeValueLabel, "Equidistant", Colors::textColor, juce::Justification::right);
+
     for (int i = 0; i < 5; i++)
     {
         setButton(*this, thresholdModeButton[i], thresholdModeLAF[i]);
@@ -445,7 +434,6 @@ ThresholdLayout::~ThresholdLayout()
     }
 }
 
-
 void ThresholdLayout::resized()
 {
     auto bounds = getLocalBounds().toFloat();
@@ -459,46 +447,40 @@ void ThresholdLayout::resized()
     float iconSize = width * 0.25f;
     // phase
     thresholdPhaseLabel.setBounds(x,
-                                 y,
+                                  y + height * 0.13f,
                                  iconSize,
                                  height * 0.05f);
 
     thresholdPhaseDial.setBounds(x,
-                                 y + height * 0.05f,
+                                 y + height * 0.18f,
                                  iconSize,
                                  iconSize);
         
     // max threshold
     thresholdMaxLabel.setBounds(x + width/2 - (iconSize/2),
-                                y,
+                                y + height * 0.13f,
                                 iconSize,
                                 height * 0.05f);
-    /*
-    thresholdMaxTextSlider->setBounds(x + width/2 - (iconSize/2),
-                                      y,
-                                      iconSize,
-                                      iconSize);
-     */
+
     thresholdMaxDial.setBounds(x + width/2 - (iconSize/2),
-                               y + height * 0.05f,
+                               y + height * 0.18f,
                                iconSize,
                                iconSize);
      
-    
     // value slew
     valueSlewLabel.setBounds(x + width - iconSize,
-                             y,
+                             y + height * 0.13f,
                              iconSize,
                              height * 0.05f);
 
     valueSlewDial.setBounds(x + width - iconSize,
-                               y + height * 0.05f,
+                               y + height * 0.18f,
                                iconSize,
                                iconSize);
 
     // graphics
     graphics.setBounds(x,
-                       y + height * 0.25f,
+                       y + height/2 - (width/2),
                        width,
                        width);
 
@@ -506,10 +488,20 @@ void ThresholdLayout::resized()
     float buttonSize = width * 0.2f;
     float buttonMargin = buttonSize * 0.1f;
 
+    thresholdModeLabel.setBounds(x,
+                                 y + height * 0.7f,
+                                 width * 0.5f,
+                                 height * 0.05f);
+
+    thresholdModeValueLabel.setBounds(x + width * 0.5f,
+                                 y + height * 0.7f,
+                                 width * 0.5f,
+                                 height * 0.05f);
+
     for (int i = 0; i < 5; i++)
     {
         thresholdModeButton[i].setBounds(x + buttonMargin + buttonSize * i,
-                                         y + height * 0.7f,
+                                         y + height * 0.75f,
                                          buttonSize - buttonMargin,
                                          buttonSize - buttonMargin);
     }
@@ -519,11 +511,13 @@ void ThresholdLayout::resized()
 void ThresholdLayout::buttonClicked(juce::Button* b)
 {
     auto param = audioProcessor.params->apvts.getParameter("thresholdMode");
-
+    juce::StringArray thresholdModeChoice = {"Polygon", "Fill", "Harmonic", "Random", "Fibonacci" };
     for (int i = 0; i < 5; i++)
     {
         if (b == &thresholdModeButton[i])
         {
+            thresholdModeValueLabel.setText(thresholdModeChoice[i], juce::dontSendNotification);
+            
             float valueNormalized = param->getNormalisableRange().convertTo0to1(i);
             param->setValueNotifyingHost(valueNormalized);
         }

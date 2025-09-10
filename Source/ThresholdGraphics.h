@@ -19,8 +19,12 @@ public:
     void paint(juce::Graphics& g) override
     {
         auto bounds = getLocalBounds().toFloat();
+        g.setColour(Colors::graphicGrey.withAlpha((float)0.05f));
+        auto fillBounds = bounds;
+        fillBounds.reduce(bounds.getWidth() * 0.025f, bounds.getWidth() * 0.025f);
+        g.fillRoundedRectangle(fillBounds, fillBounds.getWidth() * 0.05f);
         
-        float radiusIncr = (bounds.getWidth() * 0.45f)/maxThreshold;
+        float radiusIncr = (bounds.getWidth() * 0.4f)/maxThreshold;
         float centerOffsetRadius = bounds.getWidth() * 0.35f;
         juce::Point<float> centerCoords = { bounds.getCentreX(), bounds.getCentreY() };
 
@@ -29,7 +33,7 @@ public:
         
         juce::Path arcPath, arcRemainderPath, arcEndPath;
 
-        for (int i = 1; i < maxThreshold; i++)
+        for (int i = 1; i <= maxThreshold; i++)
         {
             int j = maxThreshold - i;
             auto angles = thresholdAngles[i - 1] * twopi;
@@ -39,7 +43,6 @@ public:
             float yOffset = ((0.5f - startPhase/twopi) * centerOffsetRadius) / maxThreshold;
             yOffset = yOffset * j;
 
-            
             float startAngle = std::fmodf(startPhase, twopi);
             float endAngle = std::fmodf(angles, twopi);
             if (endAngle < startAngle) {
@@ -83,8 +86,6 @@ public:
 
         g.setColour(Colors::graphicGrey.withAlpha((float)0.25f));
         g.strokePath(arcRemainderPath, juce::PathStrokeType(1.0f));
-
-        
     }
     
     void resized() override {}
@@ -105,7 +106,6 @@ public:
     }
     
 private:
-
     float startPhase = 3.14f;
     int maxThreshold = 15;
 };

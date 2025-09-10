@@ -23,37 +23,34 @@
             file="Source/MIDIProcessor.cpp"/>
       <FILE id="YIDKQ4" name="MIDIProcessor.h" compile="0" resource="0" file="Source/MIDIProcessor.h"/>
     </GROUP>
+    <GROUP id="{D3C448FB-8B78-C77E-2666-449CA93B1A21}" name="Editor">
+      <FILE id="pUeG92" name="GraphicsHelper.h" compile="0" resource="0"
+            file="Source/GraphicsHelper.h"/>
+      <FILE id="mtIeNx" name="EditableTextSlider.h" compile="0" resource="0"
+            file="Source/EditableTextSlider.h"/>
+      <FILE id="hj3JiR" name="HoldableButton.h" compile="0" resource="0"
+            file="Source/HoldableButton.h"/>
+      <FILE id="dOj5bI" name="MiscGraphics.h" compile="0" resource="0" file="Source/MiscGraphics.h"/>
+      <FILE id="ytL6f6" name="Graphics.cpp" compile="1" resource="0" file="Source/Graphics.cpp"/>
+      <FILE id="leCgPr" name="Graphics.h" compile="0" resource="0" file="Source/Graphics.h"/>
+      <FILE id="qcMCiU" name="LookAndFeel.h" compile="0" resource="0" file="Source/LookAndFeel.h"/>
+      <FILE id="qcfRJD" name="MiscControl.cpp" compile="1" resource="0" file="Source/MiscControl.cpp"/>
+      <FILE id="E5gvfz" name="MiscControl.h" compile="0" resource="0" file="Source/MiscControl.h"/>
+      <FILE id="i6GVKH" name="PresetControl.cpp" compile="1" resource="0"
+            file="Source/PresetControl.cpp"/>
+      <FILE id="Qza2ON" name="PresetControl.h" compile="0" resource="0" file="Source/PresetControl.h"/>
+      <FILE id="vpbyKJ" name="SpinnerControl.cpp" compile="1" resource="0"
+            file="Source/SpinnerControl.cpp"/>
+      <FILE id="pVsIRq" name="SpinnerControl.h" compile="0" resource="0"
+            file="Source/SpinnerControl.h"/>
+      <FILE id="e0yes8" name="ThresholdGraphics.h" compile="0" resource="0"
+            file="Source/ThresholdGraphics.h"/>
+      <FILE id="hiKpEW" name="ThresholdControl.cpp" compile="1" resource="0"
+            file="Source/ThresholdControl.cpp"/>
+      <FILE id="n3WjtZ" name="ThresholdControl.h" compile="0" resource="0"
+            file="Source/ThresholdControl.h"/>
+    </GROUP>
     <GROUP id="{3973E95F-5A08-34B3-D8A4-3EFF8421C323}" name="Source">
-      <GROUP id="{D3C448FB-8B78-C77E-2666-449CA93B1A21}" name="Editor">
-        <FILE id="dwsG4s" name="MainControl.h" compile="0" resource="0" file="Source/MainControl.h"/>
-        <FILE id="dOj5bI" name="MiscGraphics.h" compile="0" resource="0" file="Source/MiscGraphics.h"/>
-        <FILE id="pUeG92" name="GraphicsHelper.h" compile="0" resource="0"
-              file="Source/GraphicsHelper.h"/>
-        <FILE id="mtIeNx" name="EditableTextSlider.h" compile="0" resource="0"
-              file="Source/EditableTextSlider.h"/>
-        <FILE id="ytL6f6" name="Graphics.cpp" compile="1" resource="0" file="Source/Graphics.cpp"/>
-        <FILE id="leCgPr" name="Graphics.h" compile="0" resource="0" file="Source/Graphics.h"/>
-        <FILE id="qcMCiU" name="LookAndFeel.h" compile="0" resource="0" file="Source/LookAndFeel.h"/>
-        <FILE id="qcfRJD" name="MiscControl.cpp" compile="1" resource="0" file="Source/MiscControl.cpp"/>
-        <FILE id="E5gvfz" name="MiscControl.h" compile="0" resource="0" file="Source/MiscControl.h"/>
-        <FILE id="i6GVKH" name="PresetControl.cpp" compile="1" resource="0"
-              file="Source/PresetControl.cpp"/>
-        <FILE id="Qza2ON" name="PresetControl.h" compile="0" resource="0" file="Source/PresetControl.h"/>
-        <FILE id="vpbyKJ" name="SpinnerControl.cpp" compile="1" resource="0"
-              file="Source/SpinnerControl.cpp"/>
-        <FILE id="pVsIRq" name="SpinnerControl.h" compile="0" resource="0"
-              file="Source/SpinnerControl.h"/>
-        <FILE id="e0yes8" name="ThresholdGraphics.h" compile="0" resource="0"
-              file="Source/ThresholdGraphics.h"/>
-        <FILE id="hiKpEW" name="ThresholdControl.cpp" compile="1" resource="0"
-              file="Source/ThresholdControl.cpp"/>
-        <FILE id="n3WjtZ" name="ThresholdControl.h" compile="0" resource="0"
-              file="Source/ThresholdControl.h"/>
-        <FILE id="LQpkcx" name="UserInterfaceLookAndFeel.cpp" compile="1" resource="0"
-              file="Source/UserInterfaceLookAndFeel.cpp"/>
-        <FILE id="URT4hF" name="UserInterfaceLookAndFeel.h" compile="0" resource="0"
-              file="Source/UserInterfaceLookAndFeel.h"/>
-      </GROUP>
       <FILE id="nXFhP8" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="yE5W33" name="PluginProcessor.h" compile="0" resource="0"

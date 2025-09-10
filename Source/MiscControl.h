@@ -13,9 +13,9 @@
 #include "PluginProcessor.h"
 #include "LookAndFeel.h"
 #include "GraphicsHelper.h"
+#include "HoldableButton.h"
 
-
-enum class GlobalControlsLAF { NudgeForward, NudgeBackward, Brake, Reset, Jog, Hold};
+enum class GlobalControlsLAF { NudgeForward, NudgeBackward, Brake, Jog, Hold, Reset};
 
 class GlobalControlsLookAndFeel : public juce::LookAndFeel_V4, DrawHelper
 {
@@ -25,7 +25,8 @@ public:
     void drawRotarySlider(juce::Graphics &g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStartAngle, float rotaryEndAngle, juce::Slider &slider) override;
 
     //==============================================================================
-    void drawLines(juce::Graphics &g, float x, float y, float size, float rotation);
+    void drawNudge(juce::Graphics &g, float x, float y, float size, float rotation);
+    void drawBrake(juce::Graphics &g, float x, float y, float size);
     void drawReset(juce::Graphics &g, float x, float y, float size);
     void drawTriangle(juce::Graphics& g, float size, juce::Point<float> endCoords, float rotation);
     void drawJog(juce::Graphics &g, float x, float y, float size, float position);
@@ -55,39 +56,34 @@ public:
 private:
     void timerCallback() override;
 
-    LowPassGate nudgeForwardSlew, nudgeBackwardSlew, brakeSlew, resetSlew;
+    LowPassGate resetSlew;
     
     GlobalControlsLookAndFeel
-    nudgeForwardLAF { GlobalControlsLAF::NudgeForward },
-    nudgeBackwardLAF { GlobalControlsLAF::NudgeBackward },
-    brakeLAF { GlobalControlsLAF::Brake },
     resetLAF { GlobalControlsLAF::Reset },
     jogLAF { GlobalControlsLAF::Jog },
     holdLAF { GlobalControlsLAF::Hold };
 
-    juce::Label nudgeLabel, brakeLabel, resetLabel, jogLabel;
+    juce::Label
+    nudgeLabel,
+    brakeLabel,
+    jogLabel,
+    holdLabel,
+    resetLabel;
+    
+    std::unique_ptr<GlobalHoldableButton>
+    nudgeForwardButton,
+    nudgeBackwardButton,
+    brakeButton;
     
     juce::Slider jogSlider;
-    juce::TextButton nudgeBackwardButton, nudgeForwardButton, brakeButton, resetButton, holdButton;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
+    jogAttachment;
+
+    juce::TextButton
+    resetButton,
+    holdButton;
+    
+    
     
     TingeAudioProcessor& audioProcessor;
-};
-
-class GlobalModeControlsLayoutpublic : public juce::Component, juce::Button::Listener, GraphicsHelper
-{
-public:
-    
-private:
-    
-    
-    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment>
-    nudgeStrengthTextSlider,
-    brakeStrengthTextSlider;
-    
-    juce::Label
-    resetModeLabel;
-    
-    juce::TextButton
-    nextButton,
-    prevButton;
 };

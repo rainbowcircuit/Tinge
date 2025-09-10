@@ -2,6 +2,8 @@
 
 SpinnerGraphics::SpinnerGraphics()
 {
+    numThresholds = 0;
+
     thresholdSlew.setSampleRate(60);
     thresholdSlew.setEnvelopeSlew(800, 800);
     startTimerHz(60);
@@ -131,7 +133,7 @@ void SpinnerGraphics::setWheelPosition()
                                       wheelWidth,
                                       wheelWidth);
 
-    float sumYScale = animationValue * height * 0.325f;
+    float sumYScale = animationValue * height * 0.375f;
     float sumYOffset = (1.0f - animationValue) * height * 0.55f;
     
     sumBounds.setBounds(x + wheelMargin, y - sumYScale + sumYOffset, wheelWidth, wheelWidth);
